@@ -93,6 +93,19 @@ function getAvailablePlayers() {
   );
 }
 
+function getEraTeamIdentity() {
+  if (!state.currentTeam || !state.currentEra) return null;
+  const counts = new Map();
+  for (const entry of players) {
+    if (entry.team !== state.currentTeam.id || entry.era !== state.currentEra.id) continue;
+    const key = `${entry.teamName}|${entry.teamMark}`;
+    const current = counts.get(key) ?? { name: entry.teamName, mark: entry.teamMark, count: 0 };
+    current.count += 1;
+    counts.set(key, current);
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count)[0] ?? state.currentTeam;
+}
+
 function getPlayerMatches() {
   const query = state.searchQuery.trim().toLowerCase();
   if (!query) return [];
@@ -393,8 +406,9 @@ function render() {
   } else {
     el.slotTitle.textContent = state.rolled ? "Pick any player" : `Round ${filled + 1}: Any position`;
   }
-  el.teamMark.textContent = state.currentTeam ? state.currentTeam.mark : "162";
-  el.teamName.textContent = state.currentTeam ? state.currentTeam.name : "Waiting on the machine";
+  const teamIdentity = getEraTeamIdentity();
+  el.teamMark.textContent = teamIdentity ? teamIdentity.mark : "162";
+  el.teamName.textContent = teamIdentity ? teamIdentity.name : "Waiting on the machine";
   el.eraName.textContent = state.currentEra ? state.currentEra.label : "Any era";
   el.playerSearch.value = state.searchQuery;
   el.playerSearch.disabled = !state.loaded || !state.rolled || filled >= slots.length;
