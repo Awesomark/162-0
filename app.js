@@ -1,0 +1,292 @@
+const slots = [
+  { id: "P", label: "Pitcher" },
+  { id: "C", label: "Catcher" },
+  { id: "1B", label: "First Base" },
+  { id: "2B", label: "Second Base" },
+  { id: "3B", label: "Third Base" },
+  { id: "SS", label: "Shortstop" },
+  { id: "LF", label: "Left Field" },
+  { id: "CF", label: "Center Field" },
+  { id: "RF", label: "Right Field" },
+];
+
+const state = {
+  round: 0,
+  teamSkips: 1,
+  eraSkips: 1,
+  currentTeam: null,
+  currentEra: null,
+  roster: [],
+  rolled: false,
+  searchQuery: "",
+  loaded: false,
+};
+
+let teams = [];
+let players = [];
+let eras = [];
+
+const el = {
+  roundLabel: document.querySelector("#roundLabel"),
+  skipLabel: document.querySelector("#skipLabel"),
+  projectionLabel: document.querySelector("#projectionLabel"),
+  recordBig: document.querySelector("#recordBig"),
+  roster: document.querySelector("#roster"),
+  slotTitle: document.querySelector("#slotTitle"),
+  teamSkipButton: document.querySelector("#teamSkipButton"),
+  eraSkipButton: document.querySelector("#eraSkipButton"),
+  rollButton: document.querySelector("#rollButton"),
+  teamMark: document.querySelector("#teamMark"),
+  teamName: document.querySelector("#teamName"),
+  eraName: document.querySelector("#eraName"),
+  playerSearch: document.querySelector("#playerSearch"),
+  choices: document.querySelector("#choices"),
+  resultPanel: document.querySelector("#resultPanel"),
+  resultTitle: document.querySelector("#resultTitle"),
+  resultCopy: document.querySelector("#resultCopy"),
+  newGameButton: document.querySelector("#newGameButton"),
+};
+
+function sample(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function getAvailablePlayers() {
+  if (!state.currentTeam || !state.currentEra || state.round >= slots.length) return [];
+  const position = slots[state.round].id;
+  return players.filter(
+    (p) => p.team === state.currentTeam.id && p.era === state.currentEra.id && p.positions.includes(position),
+  );
+}
+
+function rollSlot(keepTeam = false, keepEra = false) {
+  for (let tries = 0; tries < 500; tries += 1) {
+    const nextTeam = keepTeam && state.currentTeam ? state.currentTeam : sample(teams);
+    const nextEra = keepEra && state.currentEra ? state.currentEra : sample(eras);
+    const hasPlayers = players.some(
+      (p) => p.team === nextTeam.id && p.era === nextEra.id && p.positions.includes(slots[state.round].id),
+    );
+    if (hasPlayers) {
+      state.currentTeam = nextTeam;
+      state.currentEra = nextEra;
+      break;
+    }
+  }
+  state.searchQuery = "";
+  state.rolled = true;
+  render();
+  el.playerSearch.focus();
+}
+
+function getChoices() {
+  const query = state.searchQuery.trim().toLowerCase();
+  if (!query) return [];
+  return getAvailablePlayers()
+    .filter((p) => p.name.toLowerCase().includes(query))
+    .sort((a, b) => {
+      const aExact = a.name.toLowerCase().startsWith(query) ? 0 : 1;
+      const bExact = b.name.toLowerCase().startsWith(query) ? 0 : 1;
+      return aExact - bExact || b.year - a.year || a.name.localeCompare(b.name);
+    })
+    .slice(0, 10);
+}
+
+function draft(playerPick) {
+  state.roster.push({ ...playerPick, slot: slots[state.round].label });
+  state.round += 1;
+  state.currentTeam = null;
+  state.currentEra = null;
+  state.rolled = false;
+  state.searchQuery = "";
+  if (state.round >= slots.length) finishSeason();
+  render();
+}
+
+function totals() {
+  const sum = state.roster.reduce(
+    (acc, p) => {
+      acc.bat += p.bat;
+      acc.pitch += p.pitch;
+      acc.speed += p.speed;
+      acc.field += p.field;
+      acc.clutch += p.clutch;
+      return acc;
+    },
+    { bat: 0, pitch: 0, speed: 0, field: 0, clutch: 0 },
+  );
+  const count = Math.max(state.roster.length, 1);
+  return {
+    bat: sum.bat / count,
+    pitch: sum.pitch / count,
+    speed: sum.speed / count,
+    field: sum.field / count,
+    clutch: sum.clutch / count,
+  };
+}
+
+function projectWins() {
+  if (state.roster.length === 0) return null;
+  const t = totals();
+  const balancePenalty = Math.max(0, 78 - Math.min(t.bat, t.pitch, t.field, t.clutch)) * 0.55;
+  const base =
+    t.bat * 0.34 +
+    t.pitch * 0.32 +
+    t.field * 0.13 +
+    t.speed * 0.08 +
+    t.clutch * 0.13 -
+    balancePenalty;
+  const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 2.2);
+  const roundBoost = state.roster.length < slots.length ? state.roster.length * 0.8 : 0;
+  return Math.max(0, Math.min(162, Math.round(curve + roundBoost)));
+}
+
+function finishSeason() {
+  const wins = projectWins();
+  el.resultPanel.classList.remove("hidden");
+  if (wins >= 162) {
+    el.resultTitle.textContent = "162-0. Immortal.";
+    el.resultCopy.textContent =
+      "The model found no soft spot: bats, arms, gloves, speed, and leverage all survived the curve.";
+  } else if (wins >= 150) {
+    el.resultTitle.textContent = `${wins}-win monster`;
+    el.resultCopy.textContent =
+      "This roster is a parade route with cleats. It still dropped a few chaos games because baseball is built to humble spreadsheets.";
+  } else if (wins >= 120) {
+    el.resultTitle.textContent = `${wins} wins`;
+    el.resultCopy.textContent =
+      "A legendary club, but the simulator found enough thin innings to keep perfection out of reach.";
+  } else {
+    el.resultTitle.textContent = `${wins} wins`;
+    el.resultCopy.textContent =
+      "Great names, uneven roster. The non-linear curve punishes missing pitching, defense, or table-setting.";
+  }
+}
+
+function reset() {
+  state.round = 0;
+  state.teamSkips = 1;
+  state.eraSkips = 1;
+  state.currentTeam = null;
+  state.currentEra = null;
+  state.roster = [];
+  state.rolled = false;
+  state.searchQuery = "";
+  el.resultPanel.classList.add("hidden");
+  render();
+}
+
+function renderRoster() {
+  el.roster.innerHTML = slots
+    .map((slot, index) => {
+      const p = state.roster[index];
+      if (!p) {
+        return `<div class="roster-slot"><div class="slot-name">${slot.label}</div><div class="player-meta">Open roster spot</div></div>`;
+      }
+      return `<div class="roster-slot filled"><div class="slot-name">${slot.label}</div><div class="player-name">${p.name}</div><div class="player-meta">${p.stats}</div></div>`;
+    })
+    .join("");
+}
+
+function renderChoices() {
+  if (!state.loaded) {
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">Loading stats</div><div class="player-meta">Building the search pool.</div></div>`;
+    return;
+  }
+  if (state.round >= slots.length) {
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">Final board</div><div class="player-meta">Start a new season to draft again.</div></div>`;
+    return;
+  }
+  if (!state.rolled) {
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">On deck</div><div class="player-meta">Roll, then type a player name.</div></div>`;
+    return;
+  }
+  if (!state.searchQuery.trim()) {
+    const count = getAvailablePlayers().length;
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">${count.toLocaleString()} available</div><div class="player-meta">Start typing to search this team, era, and position.</div></div>`;
+    return;
+  }
+  const choices = getChoices();
+  if (choices.length === 0) {
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">No match</div><div class="player-meta">Try another name from this slot's eligible pool.</div></div>`;
+    return;
+  }
+  el.choices.innerHTML = choices
+    .map(
+      (p, index) => `
+      <button class="player-button" type="button" data-choice="${index}">
+        <span>
+          <strong>${p.name}</strong>
+          <span class="player-meta">${p.year} ${p.teamName} | ${p.positions.join(" / ")}</span>
+        </span>
+        <span class="stat-line">
+          <span>${p.stats.replace(`${p.year}: `, "")}</span>
+        </span>
+      </button>
+    `,
+    )
+    .join("");
+  [...el.choices.querySelectorAll("button")].forEach((button, index) => {
+    button.addEventListener("click", () => draft(choices[index]));
+  });
+}
+
+function render() {
+  const wins = projectWins();
+  el.roundLabel.textContent = `${Math.min(state.round + 1, slots.length)} / ${slots.length}`;
+  el.skipLabel.textContent = `Team ${state.teamSkips} | Era ${state.eraSkips}`;
+  el.projectionLabel.textContent = wins === null ? "--" : wins === 162 ? "162-0" : `${wins} wins`;
+  el.recordBig.textContent = wins === null ? "--" : wins;
+  if (state.round >= slots.length) {
+    el.slotTitle.textContent = "Season complete";
+  } else {
+    el.slotTitle.textContent = state.rolled
+      ? slots[state.round].label
+      : `Round ${state.round + 1}: ${slots[state.round].label}`;
+  }
+  el.teamMark.textContent = state.currentTeam ? state.currentTeam.mark : "162";
+  el.teamName.textContent = state.currentTeam ? state.currentTeam.name : "Waiting on the machine";
+  el.eraName.textContent = state.currentEra ? state.currentEra.label : "Any era";
+  el.playerSearch.value = state.searchQuery;
+  el.playerSearch.disabled = !state.loaded || !state.rolled || state.round >= slots.length;
+  el.playerSearch.placeholder = state.rolled ? `Search ${slots[state.round].label}` : "Type a player name";
+  el.teamSkipButton.disabled = !state.loaded || state.teamSkips === 0 || !state.rolled || state.round >= slots.length;
+  el.eraSkipButton.disabled = !state.loaded || state.eraSkips === 0 || !state.rolled || state.round >= slots.length;
+  el.rollButton.disabled = !state.loaded || state.round >= slots.length;
+  renderRoster();
+  renderChoices();
+}
+
+el.rollButton.addEventListener("click", () => rollSlot());
+el.playerSearch.addEventListener("input", (event) => {
+  state.searchQuery = event.target.value;
+  renderChoices();
+});
+el.teamSkipButton.addEventListener("click", () => {
+  if (state.teamSkips > 0) {
+    state.teamSkips -= 1;
+    rollSlot(false, true);
+  }
+});
+el.eraSkipButton.addEventListener("click", () => {
+  if (state.eraSkips > 0) {
+    state.eraSkips -= 1;
+    rollSlot(true, false);
+  }
+});
+el.newGameButton.addEventListener("click", reset);
+
+async function init() {
+  render();
+  const response = await fetch("./data/players.json");
+  const data = await response.json();
+  teams = data.teams;
+  eras = data.eras;
+  players = data.players;
+  state.loaded = true;
+  render();
+}
+
+init().catch((error) => {
+  console.error(error);
+  el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">Stats failed to load</div><div class="player-meta">Check the local server and data file.</div></div>`;
+});

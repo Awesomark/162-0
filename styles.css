@@ -1,0 +1,377 @@
+:root {
+  --ink: #17201d;
+  --muted: #60706b;
+  --paper: #f7f2e8;
+  --panel: #fffaf0;
+  --line: #d9cdb7;
+  --green: #255f45;
+  --green-2: #3e8a60;
+  --red: #b94136;
+  --gold: #d8a338;
+  --blue: #254e70;
+  --shadow: 0 18px 50px rgba(32, 35, 31, .16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(216, 163, 56, .18), transparent 28rem),
+    linear-gradient(135deg, #efe4cf 0%, #f9f4ea 48%, #dae5df 100%);
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  color: #fff;
+  background: var(--red);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.shell {
+  width: min(1180px, calc(100vw - 28px));
+  margin: 0 auto;
+  padding: 24px 0 34px;
+}
+
+.scoreboard,
+.field-panel,
+.draft-panel,
+.result-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 250, 240, .92);
+  box-shadow: var(--shadow);
+}
+
+.scoreboard {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 20px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--red);
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(2.4rem, 6vw, 5.6rem);
+  line-height: .82;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+.status-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  gap: 10px;
+  width: min(520px, 100%);
+}
+
+.status-strip div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fffdf6;
+}
+
+.status-strip span,
+.player-meta,
+.field-copy small {
+  display: block;
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.status-strip strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 1rem;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(360px, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.field-panel,
+.draft-panel {
+  padding: 16px;
+}
+
+.field-art {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--green);
+}
+
+.field-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.field-copy {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  color: #fffaf0;
+  text-align: right;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, .35);
+}
+
+.field-copy span {
+  display: block;
+  font-size: clamp(2.2rem, 7vw, 4.8rem);
+  font-weight: 950;
+  line-height: .88;
+}
+
+.roster {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.roster-slot,
+.player-button,
+.team-card,
+.slot-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf6;
+}
+
+.roster-slot {
+  min-height: 86px;
+  padding: 10px;
+}
+
+.roster-slot.filled {
+  border-color: rgba(37, 95, 69, .55);
+  background: #f1f7ee;
+}
+
+.slot-name {
+  margin-bottom: 8px;
+  color: var(--blue);
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.player-name {
+  font-weight: 900;
+}
+
+.draft-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slot-card,
+.team-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+}
+
+.slot-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.icon-button {
+  width: 42px;
+  padding: 0;
+  background: var(--blue);
+}
+
+.team-card {
+  justify-content: flex-start;
+}
+
+.team-mark {
+  display: grid;
+  flex: 0 0 58px;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--green);
+  font-weight: 950;
+}
+
+.team-card p {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.team-card strong {
+  font-size: 1.35rem;
+}
+
+.search-box {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fffdf6;
+}
+
+.search-box span {
+  color: var(--blue);
+  font-size: .76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.search-box input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 14px;
+  color: var(--ink);
+  background: #fffaf0;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.search-box input:focus {
+  border-color: var(--green);
+  outline: 3px solid rgba(62, 138, 96, .18);
+}
+
+.search-box input:disabled {
+  opacity: .58;
+}
+
+.choices {
+  display: grid;
+  gap: 10px;
+}
+
+.player-button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  min-height: 92px;
+  padding: 12px;
+  color: var(--ink);
+  background: #fffdf6;
+  text-align: left;
+  box-shadow: none;
+}
+
+.player-button:hover {
+  border-color: var(--red);
+}
+
+.player-button strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-line {
+  display: block;
+  max-width: 280px;
+  text-align: right;
+}
+
+.stat-line span {
+  color: var(--green);
+  font-size: .82rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.result-panel {
+  margin-top: 18px;
+  padding: 18px;
+  border-color: rgba(185, 65, 54, .45);
+}
+
+.result-panel p {
+  max-width: 760px;
+  color: #3b4844;
+  line-height: 1.55;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .scoreboard,
+  .slot-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .status-strip,
+  .game-grid,
+  .roster {
+    grid-template-columns: 1fr;
+  }
+
+  .slot-actions {
+    justify-content: space-between;
+  }
+
+  .player-button {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-line {
+    max-width: none;
+    text-align: left;
+  }
+}

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>162-0</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="scoreboard" aria-label="Game status">
+        <div>
+          <p class="eyebrow">Perfect Season Lab</p>
+          <h1>162-0</h1>
+        </div>
+        <div class="status-strip">
+          <div>
+            <span>Round</span>
+            <strong id="roundLabel">1 / 9</strong>
+          </div>
+          <div>
+            <span>Skips</span>
+            <strong id="skipLabel">Team 1 | Era 1</strong>
+          </div>
+          <div>
+            <span>Projection</span>
+            <strong id="projectionLabel">--</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="game-grid">
+        <article class="field-panel" aria-label="Drafted roster">
+          <div class="field-art" aria-hidden="true">
+            <svg viewBox="0 0 560 420" role="img">
+              <defs>
+                <linearGradient id="grass" x1="0" x2="1" y1="0" y2="1">
+                  <stop stop-color="#317a52"></stop>
+                  <stop offset="1" stop-color="#173f35"></stop>
+                </linearGradient>
+                <linearGradient id="dirt" x1="0" x2="1">
+                  <stop stop-color="#b06d35"></stop>
+                  <stop offset="1" stop-color="#70421f"></stop>
+                </linearGradient>
+              </defs>
+              <rect width="560" height="420" rx="20" fill="url(#grass)"></rect>
+              <path d="M280 360 L90 170 Q280 20 470 170 Z" fill="#245f45"></path>
+              <path d="M280 360 L178 258 L280 156 L382 258 Z" fill="url(#dirt)"></path>
+              <path d="M280 360 L90 170 M280 360 L470 170" stroke="#f6ead8" stroke-width="4" opacity=".85"></path>
+              <circle cx="280" cy="260" r="28" fill="#8d532a"></circle>
+              <rect x="267" y="346" width="26" height="14" transform="rotate(45 280 353)" fill="#f6ead8"></rect>
+              <rect x="267" y="149" width="26" height="14" transform="rotate(45 280 156)" fill="#f6ead8"></rect>
+              <rect x="165" y="251" width="26" height="14" transform="rotate(45 178 258)" fill="#f6ead8"></rect>
+              <rect x="369" y="251" width="26" height="14" transform="rotate(45 382 258)" fill="#f6ead8"></rect>
+            </svg>
+            <div class="field-copy">
+              <span id="recordBig">--</span>
+              <small>projected wins</small>
+            </div>
+          </div>
+          <div class="roster" id="roster"></div>
+        </article>
+
+        <article class="draft-panel" aria-label="Current draft round">
+          <div class="slot-card">
+            <div>
+              <p class="eyebrow">Slot Machine</p>
+              <h2 id="slotTitle">Roll your first matchup</h2>
+            </div>
+            <div class="slot-actions">
+              <button id="teamSkipButton" class="icon-button" type="button" title="Skip team">T</button>
+              <button id="eraSkipButton" class="icon-button" type="button" title="Skip era">E</button>
+              <button id="rollButton" type="button">Roll</button>
+            </div>
+          </div>
+
+          <div class="team-card" id="teamCard">
+            <span class="team-mark" id="teamMark">162</span>
+            <div>
+              <p id="teamName">Waiting on the machine</p>
+              <strong id="eraName">Any era</strong>
+            </div>
+          </div>
+
+          <label class="search-box" for="playerSearch">
+            <span>Player Search</span>
+            <input id="playerSearch" type="search" autocomplete="off" placeholder="Type a player name" disabled>
+          </label>
+
+          <div class="choices" id="choices"></div>
+
+        </article>
+      </section>
+
+      <section class="result-panel hidden" id="resultPanel" aria-live="polite">
+        <h2 id="resultTitle">Season Complete</h2>
+        <p id="resultCopy"></p>
+        <button id="newGameButton" type="button">New Season</button>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
