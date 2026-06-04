@@ -175,7 +175,7 @@ h2 {
 .field-copy {
   position: absolute;
   right: 16px;
-  top: 14px;
+  bottom: 14px;
   color: var(--ink);
   text-align: right;
 }
@@ -207,16 +207,27 @@ h2 {
 }
 
 .roster-slot {
-  min-height: 76px;
-  padding: 10px;
+  min-height: 42px;
+  padding: 7px 9px;
   transition: border-color .15s ease, background .15s ease, opacity .15s ease;
 }
 
 .field-roster .roster-slot {
   position: absolute;
-  width: min(165px, 30vw);
+  width: 118px;
   pointer-events: auto;
-  box-shadow: 0 10px 26px rgba(23, 32, 29, .14);
+  box-shadow: 0 8px 20px rgba(23, 32, 29, .12);
+  text-align: center;
+}
+
+.field-roster .roster-slot:not(.filled) .player-meta {
+  display: none;
+}
+
+.field-roster .roster-slot.filled {
+  width: 150px;
+  min-height: 72px;
+  text-align: left;
 }
 
 .field-roster .roster-slot[data-position="P"] {
@@ -294,15 +305,28 @@ h2 {
 }
 
 .slot-name {
-  margin-bottom: 8px;
+  margin-bottom: 0;
   color: var(--blue);
-  font-size: .78rem;
+  font-size: .72rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .player-name {
+  margin-top: 5px;
   font-weight: 900;
+  font-size: .9rem;
+  line-height: 1.15;
+}
+
+.field-roster .roster-slot.filled .slot-name {
+  margin-bottom: 4px;
+  font-size: .66rem;
+}
+
+.field-roster .roster-slot.filled .player-meta {
+  font-size: .62rem;
+  line-height: 1.25;
 }
 
 .draft-panel {
@@ -506,30 +530,26 @@ h2 {
   }
 
   .field-roster .roster-slot {
-    width: min(110px, 30vw);
-    min-height: 48px;
-    padding: 6px 7px;
-  }
-
-  .field-roster .roster-slot:not(.filled) .player-meta {
-    display: none;
+    width: min(86px, 25vw);
+    min-height: 34px;
+    padding: 5px 6px;
   }
 
   .field-roster .roster-slot.filled {
-    width: min(138px, 38vw);
+    width: min(122px, 34vw);
+    min-height: 62px;
   }
 
   .field-roster .roster-slot .slot-name {
-    margin-bottom: 3px;
-    font-size: .66rem;
+    font-size: .56rem;
   }
 
   .field-roster .roster-slot .player-name {
-    font-size: .82rem;
+    font-size: .72rem;
   }
 
   .field-roster .roster-slot .player-meta {
-    font-size: .58rem;
+    font-size: .52rem;
   }
 
   .field-roster .roster-slot[data-position="P"] {
