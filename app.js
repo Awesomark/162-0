@@ -170,24 +170,18 @@ function draft(playerPick, slotId) {
 
 function totals() {
   const drafted = state.roster.filter(Boolean);
-  const sum = drafted.reduce(
-    (acc, p) => {
-      acc.bat += p.bat;
-      acc.pitch += p.pitch;
-      acc.speed += p.speed;
-      acc.field += p.field;
-      acc.clutch += p.clutch;
-      return acc;
-    },
-    { bat: 0, pitch: 0, speed: 0, field: 0, clutch: 0 },
-  );
-  const count = Math.max(drafted.length, 1);
+  const pitcher = state.roster[0];
+  const hitters = state.roster.slice(1).filter(Boolean);
+  const average = (list, key, fallback = 62) => {
+    if (list.length === 0) return fallback;
+    return list.reduce((total, player) => total + player[key], 0) / list.length;
+  };
   return {
-    bat: sum.bat / count,
-    pitch: sum.pitch / count,
-    speed: sum.speed / count,
-    field: sum.field / count,
-    clutch: sum.clutch / count,
+    bat: average(hitters, "bat"),
+    pitch: pitcher ? pitcher.pitch : 62,
+    speed: average(hitters, "speed"),
+    field: average(drafted, "field"),
+    clutch: average(drafted, "clutch"),
   };
 }
 
