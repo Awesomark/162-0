@@ -301,7 +301,7 @@ h2 {
 
 .player-button {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
   gap: 12px;
   min-height: 92px;
   padding: 12px;
@@ -331,6 +331,25 @@ h2 {
   font-size: .82rem;
   font-weight: 900;
   line-height: 1.35;
+}
+
+.assign-line {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assign-button {
+  min-height: 34px;
+  min-width: 46px;
+  padding: 0 10px;
+  background: var(--blue);
+  font-size: .78rem;
+}
+
+.assign-button:hover {
+  background: var(--green);
 }
 
 .result-panel {

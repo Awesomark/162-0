@@ -11,12 +11,11 @@ const slots = [
 ];
 
 const state = {
-  round: 0,
   teamSkips: 1,
   eraSkips: 1,
   currentTeam: null,
   currentEra: null,
-  roster: [],
+  roster: Array(slots.length).fill(null),
   rolled: false,
   searchQuery: "",
   loaded: false,
@@ -51,20 +50,43 @@ function sample(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+function filledCount() {
+  return state.roster.filter(Boolean).length;
+}
+
+function openSlotsFor(playerPick) {
+  return slots.filter(
+    (slot, index) => !state.roster[index] && playerPick.positions.includes(slot.id),
+  );
+}
+
+function hasOpenPosition(playerPick) {
+  return openSlotsFor(playerPick).length > 0;
+}
+
 function getAvailablePlayers() {
-  if (!state.currentTeam || !state.currentEra || state.round >= slots.length) return [];
-  const position = slots[state.round].id;
+  if (!state.currentTeam || !state.currentEra || filledCount() >= slots.length) return [];
+  const draftedPlayerIds = new Set(state.roster.filter(Boolean).map((p) => p.playerID));
   return players.filter(
-    (p) => p.team === state.currentTeam.id && p.era === state.currentEra.id && p.positions.includes(position),
+    (p) =>
+      p.team === state.currentTeam.id &&
+      p.era === state.currentEra.id &&
+      !draftedPlayerIds.has(p.playerID) &&
+      hasOpenPosition(p),
   );
 }
 
 function rollSlot(keepTeam = false, keepEra = false) {
+  const draftedPlayerIds = new Set(state.roster.filter(Boolean).map((p) => p.playerID));
   for (let tries = 0; tries < 500; tries += 1) {
     const nextTeam = keepTeam && state.currentTeam ? state.currentTeam : sample(teams);
     const nextEra = keepEra && state.currentEra ? state.currentEra : sample(eras);
     const hasPlayers = players.some(
-      (p) => p.team === nextTeam.id && p.era === nextEra.id && p.positions.includes(slots[state.round].id),
+      (p) =>
+        p.team === nextTeam.id &&
+        p.era === nextEra.id &&
+        !draftedPlayerIds.has(p.playerID) &&
+        hasOpenPosition(p),
     );
     if (hasPlayers) {
       state.currentTeam = nextTeam;
@@ -91,19 +113,21 @@ function getChoices() {
     .slice(0, 10);
 }
 
-function draft(playerPick) {
-  state.roster.push({ ...playerPick, slot: slots[state.round].label });
-  state.round += 1;
+function draft(playerPick, slotId) {
+  const slotIndex = slots.findIndex((slot) => slot.id === slotId);
+  if (slotIndex === -1 || state.roster[slotIndex] || !playerPick.positions.includes(slotId)) return;
+  state.roster[slotIndex] = { ...playerPick, slot: slots[slotIndex].label };
   state.currentTeam = null;
   state.currentEra = null;
   state.rolled = false;
   state.searchQuery = "";
-  if (state.round >= slots.length) finishSeason();
+  if (filledCount() >= slots.length) finishSeason();
   render();
 }
 
 function totals() {
-  const sum = state.roster.reduce(
+  const drafted = state.roster.filter(Boolean);
+  const sum = drafted.reduce(
     (acc, p) => {
       acc.bat += p.bat;
       acc.pitch += p.pitch;
@@ -114,7 +138,7 @@ function totals() {
     },
     { bat: 0, pitch: 0, speed: 0, field: 0, clutch: 0 },
   );
-  const count = Math.max(state.roster.length, 1);
+  const count = Math.max(drafted.length, 1);
   return {
     bat: sum.bat / count,
     pitch: sum.pitch / count,
@@ -125,7 +149,7 @@ function totals() {
 }
 
 function projectWins() {
-  if (state.roster.length === 0) return null;
+  if (filledCount() === 0) return null;
   const t = totals();
   const balancePenalty = Math.max(0, 78 - Math.min(t.bat, t.pitch, t.field, t.clutch)) * 0.55;
   const base =
@@ -136,7 +160,7 @@ function projectWins() {
     t.clutch * 0.13 -
     balancePenalty;
   const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 2.2);
-  const roundBoost = state.roster.length < slots.length ? state.roster.length * 0.8 : 0;
+  const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
   return Math.max(0, Math.min(162, Math.round(curve + roundBoost)));
 }
 
@@ -163,12 +187,11 @@ function finishSeason() {
 }
 
 function reset() {
-  state.round = 0;
   state.teamSkips = 1;
   state.eraSkips = 1;
   state.currentTeam = null;
   state.currentEra = null;
-  state.roster = [];
+  state.roster = Array(slots.length).fill(null);
   state.rolled = false;
   state.searchQuery = "";
   el.resultPanel.classList.add("hidden");
@@ -192,7 +215,7 @@ function renderChoices() {
     el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">Loading stats</div><div class="player-meta">Building the search pool.</div></div>`;
     return;
   }
-  if (state.round >= slots.length) {
+  if (filledCount() >= slots.length) {
     el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">Final board</div><div class="player-meta">Start a new season to draft again.</div></div>`;
     return;
   }
@@ -202,7 +225,7 @@ function renderChoices() {
   }
   if (!state.searchQuery.trim()) {
     const count = getAvailablePlayers().length;
-    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">${count.toLocaleString()} available</div><div class="player-meta">Start typing to search this team, era, and position.</div></div>`;
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">${count.toLocaleString()} available</div><div class="player-meta">Start typing to search this team and era.</div></div>`;
     return;
   }
   const choices = getChoices();
@@ -213,7 +236,7 @@ function renderChoices() {
   el.choices.innerHTML = choices
     .map(
       (p, index) => `
-      <button class="player-button" type="button" data-choice="${index}">
+      <div class="player-button" data-choice="${index}">
         <span>
           <strong>${p.name}</strong>
           <span class="player-meta">${p.year} ${p.teamName} | ${p.positions.join(" / ")}</span>
@@ -221,37 +244,41 @@ function renderChoices() {
         <span class="stat-line">
           <span>${p.stats.replace(`${p.year}: `, "")}</span>
         </span>
-      </button>
+        <span class="assign-line">
+          ${openSlotsFor(p)
+            .map((slot) => `<button class="assign-button" type="button" data-choice="${index}" data-slot="${slot.id}">${slot.id}</button>`)
+            .join("")}
+        </span>
+      </div>
     `,
     )
     .join("");
-  [...el.choices.querySelectorAll("button")].forEach((button, index) => {
-    button.addEventListener("click", () => draft(choices[index]));
+  [...el.choices.querySelectorAll(".assign-button")].forEach((button) => {
+    button.addEventListener("click", () => draft(choices[Number(button.dataset.choice)], button.dataset.slot));
   });
 }
 
 function render() {
   const wins = projectWins();
-  el.roundLabel.textContent = `${Math.min(state.round + 1, slots.length)} / ${slots.length}`;
+  const filled = filledCount();
+  el.roundLabel.textContent = `${Math.min(filled + 1, slots.length)} / ${slots.length}`;
   el.skipLabel.textContent = `Team ${state.teamSkips} | Era ${state.eraSkips}`;
   el.projectionLabel.textContent = wins === null ? "--" : wins === 162 ? "162-0" : `${wins} wins`;
   el.recordBig.textContent = wins === null ? "--" : wins;
-  if (state.round >= slots.length) {
+  if (filled >= slots.length) {
     el.slotTitle.textContent = "Season complete";
   } else {
-    el.slotTitle.textContent = state.rolled
-      ? slots[state.round].label
-      : `Round ${state.round + 1}: ${slots[state.round].label}`;
+    el.slotTitle.textContent = state.rolled ? "Pick any player" : `Round ${filled + 1}: Any position`;
   }
   el.teamMark.textContent = state.currentTeam ? state.currentTeam.mark : "162";
   el.teamName.textContent = state.currentTeam ? state.currentTeam.name : "Waiting on the machine";
   el.eraName.textContent = state.currentEra ? state.currentEra.label : "Any era";
   el.playerSearch.value = state.searchQuery;
-  el.playerSearch.disabled = !state.loaded || !state.rolled || state.round >= slots.length;
-  el.playerSearch.placeholder = state.rolled ? `Search ${slots[state.round].label}` : "Type a player name";
-  el.teamSkipButton.disabled = !state.loaded || state.teamSkips === 0 || !state.rolled || state.round >= slots.length;
-  el.eraSkipButton.disabled = !state.loaded || state.eraSkips === 0 || !state.rolled || state.round >= slots.length;
-  el.rollButton.disabled = !state.loaded || state.round >= slots.length;
+  el.playerSearch.disabled = !state.loaded || !state.rolled || filled >= slots.length;
+  el.playerSearch.placeholder = state.rolled ? "Search any eligible player" : "Type a player name";
+  el.teamSkipButton.disabled = !state.loaded || state.teamSkips === 0 || !state.rolled || filled >= slots.length;
+  el.eraSkipButton.disabled = !state.loaded || state.eraSkips === 0 || !state.rolled || filled >= slots.length;
+  el.rollButton.disabled = !state.loaded || filled >= slots.length;
   renderRoster();
   renderChoices();
 }
