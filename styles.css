@@ -138,24 +138,46 @@ h2 {
 
 .field-art {
   position: relative;
-  overflow: hidden;
+  min-height: clamp(420px, 58vw, 660px);
+  overflow: visible;
   border-radius: 8px;
-  background: var(--green);
+  background: #fffdf6;
 }
 
-.field-art svg {
+.field-logo {
   display: block;
   width: 100%;
+  max-width: 620px;
   height: auto;
+  margin: 0 auto;
+  filter: drop-shadow(0 16px 24px rgba(23, 32, 29, .16));
+}
+
+.outfield {
+  fill: #008000;
+}
+
+.dirt {
+  fill: #80833f;
+}
+
+.infield {
+  fill: #008000;
+}
+
+.base,
+.mound {
+  fill: #f7f2e8;
+  stroke: #17201d;
+  stroke-width: 1;
 }
 
 .field-copy {
   position: absolute;
-  right: 18px;
-  bottom: 16px;
-  color: #fffaf0;
+  right: 16px;
+  top: 14px;
+  color: var(--ink);
   text-align: right;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, .35);
 }
 
 .field-copy span {
@@ -166,10 +188,13 @@ h2 {
 }
 
 .roster {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 12px;
+  margin-top: 0;
+}
+
+.field-roster {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 .roster-slot,
@@ -182,9 +207,70 @@ h2 {
 }
 
 .roster-slot {
-  min-height: 86px;
+  min-height: 76px;
   padding: 10px;
   transition: border-color .15s ease, background .15s ease, opacity .15s ease;
+}
+
+.field-roster .roster-slot {
+  position: absolute;
+  width: min(165px, 30vw);
+  pointer-events: auto;
+  box-shadow: 0 10px 26px rgba(23, 32, 29, .14);
+}
+
+.field-roster .roster-slot[data-position="P"] {
+  left: 50%;
+  top: 47%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="C"] {
+  left: 50%;
+  top: 82%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="1B"] {
+  left: 75%;
+  top: 55%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="2B"] {
+  left: 55%;
+  top: 33%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="3B"] {
+  left: 25%;
+  top: 55%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="SS"] {
+  left: 38%;
+  top: 39%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="LF"] {
+  left: 20%;
+  top: 19%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="CF"] {
+  left: 50%;
+  top: 13%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="RF"] {
+  left: 80%;
+  top: 19%;
+  transform: translate(-50%, -50%);
 }
 
 .roster-slot.filled {
@@ -411,9 +497,67 @@ h2 {
   }
 
   .status-strip,
-  .game-grid,
-  .roster {
+  .game-grid {
     grid-template-columns: 1fr;
+  }
+
+  .field-art {
+    min-height: 500px;
+  }
+
+  .field-roster .roster-slot {
+    width: min(110px, 30vw);
+    min-height: 48px;
+    padding: 6px 7px;
+  }
+
+  .field-roster .roster-slot:not(.filled) .player-meta {
+    display: none;
+  }
+
+  .field-roster .roster-slot.filled {
+    width: min(138px, 38vw);
+  }
+
+  .field-roster .roster-slot .slot-name {
+    margin-bottom: 3px;
+    font-size: .66rem;
+  }
+
+  .field-roster .roster-slot .player-name {
+    font-size: .82rem;
+  }
+
+  .field-roster .roster-slot .player-meta {
+    font-size: .58rem;
+  }
+
+  .field-roster .roster-slot[data-position="P"] {
+    top: 51%;
+  }
+
+  .field-roster .roster-slot[data-position="C"] {
+    top: 88%;
+  }
+
+  .field-roster .roster-slot[data-position="1B"] {
+    left: 82%;
+    top: 62%;
+  }
+
+  .field-roster .roster-slot[data-position="2B"] {
+    left: 57%;
+    top: 39%;
+  }
+
+  .field-roster .roster-slot[data-position="3B"] {
+    left: 18%;
+    top: 62%;
+  }
+
+  .field-roster .roster-slot[data-position="SS"] {
+    left: 34%;
+    top: 45%;
   }
 
   .slot-actions {

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>162-0</title>
-    <link rel="stylesheet" href="./styles.css?v=6">
+    <link rel="stylesheet" href="./styles.css?v=7">
   </head>
   <body>
     <main class="shell">
@@ -31,34 +31,23 @@
 
       <section class="game-grid">
         <article class="field-panel" aria-label="Drafted roster">
-          <div class="field-art" aria-hidden="true">
-            <svg viewBox="0 0 560 420" role="img">
-              <defs>
-                <linearGradient id="grass" x1="0" x2="1" y1="0" y2="1">
-                  <stop stop-color="#317a52"></stop>
-                  <stop offset="1" stop-color="#173f35"></stop>
-                </linearGradient>
-                <linearGradient id="dirt" x1="0" x2="1">
-                  <stop stop-color="#b06d35"></stop>
-                  <stop offset="1" stop-color="#70421f"></stop>
-                </linearGradient>
-              </defs>
-              <rect width="560" height="420" rx="20" fill="url(#grass)"></rect>
-              <path d="M280 360 L90 170 Q280 20 470 170 Z" fill="#245f45"></path>
-              <path d="M280 360 L178 258 L280 156 L382 258 Z" fill="url(#dirt)"></path>
-              <path d="M280 360 L90 170 M280 360 L470 170" stroke="#f6ead8" stroke-width="4" opacity=".85"></path>
-              <circle cx="280" cy="260" r="28" fill="#8d532a"></circle>
-              <rect x="267" y="346" width="26" height="14" transform="rotate(45 280 353)" fill="#f6ead8"></rect>
-              <rect x="267" y="149" width="26" height="14" transform="rotate(45 280 156)" fill="#f6ead8"></rect>
-              <rect x="165" y="251" width="26" height="14" transform="rotate(45 178 258)" fill="#f6ead8"></rect>
-              <rect x="369" y="251" width="26" height="14" transform="rotate(45 382 258)" fill="#f6ead8"></rect>
+          <div class="field-art">
+            <svg class="field-logo" viewBox="0 0 520 420" role="img" aria-label="Baseball field roster">
+              <path class="outfield" d="M52 126 C156 50 229 25 304 48 C354 62 413 101 478 138 L408 221 L260 360 L122 221 Z"></path>
+              <path class="dirt" d="M260 360 L118 214 L260 104 L404 214 Z"></path>
+              <path class="infield" d="M260 298 L168 208 L260 132 L354 208 Z"></path>
+              <rect class="base home" x="246" y="348" width="28" height="28" transform="rotate(45 260 362)"></rect>
+              <rect class="base first" x="390" y="200" width="22" height="22" transform="rotate(45 401 211)"></rect>
+              <rect class="base second" x="249" y="94" width="22" height="22" transform="rotate(45 260 105)"></rect>
+              <rect class="base third" x="108" y="200" width="22" height="22" transform="rotate(45 119 211)"></rect>
+              <rect class="mound" x="244" y="196" width="32" height="18"></rect>
             </svg>
             <div class="field-copy">
               <span id="recordBig">--</span>
               <small>projected wins</small>
             </div>
+            <div class="roster field-roster" id="roster"></div>
           </div>
-          <div class="roster" id="roster"></div>
         </article>
 
         <article class="draft-panel" aria-label="Current draft round">
@@ -99,6 +88,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=6"></script>
+    <script src="./app.js?v=7"></script>
   </body>
 </html>

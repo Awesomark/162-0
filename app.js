@@ -241,9 +241,9 @@ function renderRoster() {
     .map((slot, index) => {
       const p = state.roster[index];
       if (!p) {
-        return `<div class="roster-slot" data-slot-index="${index}"><div class="slot-name">${slot.label}</div><div class="player-meta">Open roster spot</div></div>`;
+        return `<div class="roster-slot" data-slot-index="${index}" data-position="${slot.id}"><div class="slot-name">${slot.label}</div><div class="player-meta">Open roster spot</div></div>`;
       }
-      return `<div class="roster-slot filled" data-slot-index="${index}" draggable="true"><div class="slot-name">${slot.label}</div><div class="player-name">${p.name}</div><div class="player-meta">${p.positions.join(" / ")}</div><div class="player-meta">${p.stats}</div></div>`;
+      return `<div class="roster-slot filled" data-slot-index="${index}" data-position="${slot.id}" draggable="true"><div class="slot-name">${slot.label}</div><div class="player-name">${p.name}</div><div class="player-meta">${p.positions.join(" / ")}</div><div class="player-meta">${p.stats}</div></div>`;
     })
     .join("");
   [...el.roster.querySelectorAll(".roster-slot")].forEach((slotElement) => {
