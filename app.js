@@ -19,6 +19,7 @@ const state = {
   rolled: false,
   searchQuery: "",
   loaded: false,
+  dragFromIndex: null,
 };
 
 let teams = [];
@@ -62,6 +63,21 @@ function openSlotsFor(playerPick) {
 
 function hasOpenPosition(playerPick) {
   return openSlotsFor(playerPick).length > 0;
+}
+
+function canPlaySlot(playerPick, slotIndex) {
+  return Boolean(playerPick && slots[slotIndex] && playerPick.positions.includes(slots[slotIndex].id));
+}
+
+function moveRosterPlayer(fromIndex, toIndex) {
+  if (fromIndex === toIndex || !state.roster[fromIndex] || !canPlaySlot(state.roster[fromIndex], toIndex)) return false;
+  const movingPlayer = state.roster[fromIndex];
+  const targetPlayer = state.roster[toIndex];
+  if (targetPlayer && !canPlaySlot(targetPlayer, fromIndex)) return false;
+  state.roster[toIndex] = movingPlayer;
+  state.roster[fromIndex] = targetPlayer || null;
+  render();
+  return true;
 }
 
 function getAvailablePlayers() {
@@ -203,11 +219,55 @@ function renderRoster() {
     .map((slot, index) => {
       const p = state.roster[index];
       if (!p) {
-        return `<div class="roster-slot"><div class="slot-name">${slot.label}</div><div class="player-meta">Open roster spot</div></div>`;
+        return `<div class="roster-slot" data-slot-index="${index}"><div class="slot-name">${slot.label}</div><div class="player-meta">Open roster spot</div></div>`;
       }
-      return `<div class="roster-slot filled"><div class="slot-name">${slot.label}</div><div class="player-name">${p.name}</div><div class="player-meta">${p.stats}</div></div>`;
+      return `<div class="roster-slot filled" data-slot-index="${index}" draggable="true"><div class="slot-name">${slot.label}</div><div class="player-name">${p.name}</div><div class="player-meta">${p.positions.join(" / ")}</div><div class="player-meta">${p.stats}</div></div>`;
     })
     .join("");
+  [...el.roster.querySelectorAll(".roster-slot")].forEach((slotElement) => {
+    slotElement.addEventListener("dragstart", (event) => {
+      const slotIndex = Number(slotElement.dataset.slotIndex);
+      if (!state.roster[slotIndex]) {
+        event.preventDefault();
+        return;
+      }
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(slotIndex));
+      state.dragFromIndex = slotIndex;
+      slotElement.classList.add("dragging");
+    });
+    slotElement.addEventListener("dragend", () => {
+      state.dragFromIndex = null;
+      slotElement.classList.remove("dragging");
+      [...el.roster.querySelectorAll(".roster-slot")].forEach((candidate) => {
+        candidate.classList.remove("drop-ok", "drop-no");
+      });
+    });
+    slotElement.addEventListener("dragover", (event) => {
+      const fromIndex = state.dragFromIndex;
+      const toIndex = Number(slotElement.dataset.slotIndex);
+      if (!Number.isInteger(fromIndex) || !state.roster[fromIndex]) return;
+      event.preventDefault();
+      const targetPlayer = state.roster[toIndex];
+      const legal =
+        canPlaySlot(state.roster[fromIndex], toIndex) &&
+        (!targetPlayer || canPlaySlot(targetPlayer, fromIndex));
+      event.dataTransfer.dropEffect = legal ? "move" : "none";
+      slotElement.classList.toggle("drop-ok", legal);
+      slotElement.classList.toggle("drop-no", !legal);
+    });
+    slotElement.addEventListener("dragleave", () => {
+      slotElement.classList.remove("drop-ok", "drop-no");
+    });
+    slotElement.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const fromIndex = Number.isInteger(state.dragFromIndex)
+        ? state.dragFromIndex
+        : Number(event.dataTransfer.getData("text/plain"));
+      const toIndex = Number(slotElement.dataset.slotIndex);
+      moveRosterPlayer(fromIndex, toIndex);
+    });
+  });
 }
 
 function renderChoices() {

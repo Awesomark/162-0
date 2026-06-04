@@ -184,11 +184,27 @@ h2 {
 .roster-slot {
   min-height: 86px;
   padding: 10px;
+  transition: border-color .15s ease, background .15s ease, opacity .15s ease;
 }
 
 .roster-slot.filled {
   border-color: rgba(37, 95, 69, .55);
   background: #f1f7ee;
+  cursor: grab;
+}
+
+.roster-slot.dragging {
+  opacity: .55;
+}
+
+.roster-slot.drop-ok {
+  border-color: var(--green-2);
+  background: #e8f5e7;
+}
+
+.roster-slot.drop-no {
+  border-color: var(--red);
+  background: #fff0ec;
 }
 
 .slot-name {
