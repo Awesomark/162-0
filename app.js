@@ -33,6 +33,7 @@ const el = {
   projectionLabel: document.querySelector("#projectionLabel"),
   recordBig: document.querySelector("#recordBig"),
   roster: document.querySelector("#roster"),
+  rosterDetails: document.querySelector("#rosterDetails"),
   slotTitle: document.querySelector("#slotTitle"),
   teamSkipButton: document.querySelector("#teamSkipButton"),
   eraSkipButton: document.querySelector("#eraSkipButton"),
@@ -68,6 +69,16 @@ function hasOpenPosition(playerPick) {
 
 function canPlaySlot(playerPick, slotIndex) {
   return Boolean(playerPick && slots[slotIndex] && playerPick.positions.includes(slots[slotIndex].id));
+}
+
+function playerInitials(name) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
 }
 
 function moveRosterPlayer(fromIndex, toIndex) {
@@ -254,9 +265,19 @@ function renderRoster() {
     .map((slot, index) => {
       const p = state.roster[index];
       if (!p) {
-        return `<div class="roster-slot" data-slot-index="${index}" data-position="${slot.id}"><div class="slot-name">${slot.label}</div><div class="player-meta">Open roster spot</div></div>`;
+        return `<div class="roster-slot" data-slot-index="${index}" data-position="${slot.id}" title="${slot.label}"><div class="slot-name">${slot.id}</div></div>`;
       }
-      return `<div class="roster-slot filled" data-slot-index="${index}" data-position="${slot.id}" draggable="true"><div class="slot-name">${slot.label}</div><div class="player-name">${p.name}</div><div class="player-meta">${p.positions.join(" / ")}</div><div class="player-meta">${p.stats}</div></div>`;
+      const fieldLabel = `${playerInitials(p.name)} ${p.teamMark}`;
+      return `<div class="roster-slot filled" data-slot-index="${index}" data-position="${slot.id}" draggable="true" title="${slot.label}: ${p.name}, ${p.stats}"><div class="slot-name">${fieldLabel}</div></div>`;
+    })
+    .join("");
+  el.rosterDetails.innerHTML = slots
+    .map((slot, index) => {
+      const p = state.roster[index];
+      if (!p) {
+        return `<div class="detail-slot"><span>${slot.label}</span><strong>Open</strong></div>`;
+      }
+      return `<div class="detail-slot filled"><span>${slot.label} · ${p.teamMark}</span><strong>${p.name}</strong><small>${p.stats}</small><em>Can play: ${p.positions.join(" / ")}</em></div>`;
     })
     .join("");
   [...el.roster.querySelectorAll(".roster-slot")].forEach((slotElement) => {
