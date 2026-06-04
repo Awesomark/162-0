@@ -18,6 +18,7 @@ const state = {
   roster: Array(slots.length).fill(null),
   rolled: false,
   searchQuery: "",
+  selectedPlayerID: null,
   loaded: false,
   dragFromIndex: null,
 };
@@ -92,6 +93,43 @@ function getAvailablePlayers() {
   );
 }
 
+function getPlayerMatches() {
+  const query = state.searchQuery.trim().toLowerCase();
+  if (!query) return [];
+  const byPlayer = new Map();
+  for (const entry of getAvailablePlayers()) {
+    if (!entry.name.toLowerCase().includes(query)) continue;
+    const current = byPlayer.get(entry.playerID) ?? {
+      playerID: entry.playerID,
+      name: entry.name,
+      teamName: entry.teamName,
+      positions: new Set(),
+      seasons: 0,
+      bestYear: entry.year,
+    };
+    entry.positions.forEach((position) => current.positions.add(position));
+    current.seasons += 1;
+    current.bestYear = Math.max(current.bestYear, entry.year);
+    byPlayer.set(entry.playerID, current);
+  }
+  return [...byPlayer.values()]
+    .map((player) => ({ ...player, positions: [...player.positions] }))
+    .sort((a, b) => {
+      const queryText = state.searchQuery.trim().toLowerCase();
+      const aExact = a.name.toLowerCase().startsWith(queryText) ? 0 : 1;
+      const bExact = b.name.toLowerCase().startsWith(queryText) ? 0 : 1;
+      return aExact - bExact || a.name.localeCompare(b.name);
+    })
+    .slice(0, 10);
+}
+
+function getSeasonChoices() {
+  if (!state.selectedPlayerID) return [];
+  return getAvailablePlayers()
+    .filter((entry) => entry.playerID === state.selectedPlayerID)
+    .sort((a, b) => b.year - a.year || b.bat + b.pitch - (a.bat + a.pitch));
+}
+
 function rollSlot(keepTeam = false, keepEra = false) {
   const draftedPlayerIds = new Set(state.roster.filter(Boolean).map((p) => p.playerID));
   for (let tries = 0; tries < 500; tries += 1) {
@@ -111,22 +149,10 @@ function rollSlot(keepTeam = false, keepEra = false) {
     }
   }
   state.searchQuery = "";
+  state.selectedPlayerID = null;
   state.rolled = true;
   render();
   el.playerSearch.focus();
-}
-
-function getChoices() {
-  const query = state.searchQuery.trim().toLowerCase();
-  if (!query) return [];
-  return getAvailablePlayers()
-    .filter((p) => p.name.toLowerCase().includes(query))
-    .sort((a, b) => {
-      const aExact = a.name.toLowerCase().startsWith(query) ? 0 : 1;
-      const bExact = b.name.toLowerCase().startsWith(query) ? 0 : 1;
-      return aExact - bExact || b.year - a.year || a.name.localeCompare(b.name);
-    })
-    .slice(0, 10);
 }
 
 function draft(playerPick, slotId) {
@@ -137,6 +163,7 @@ function draft(playerPick, slotId) {
   state.currentEra = null;
   state.rolled = false;
   state.searchQuery = "";
+  state.selectedPlayerID = null;
   if (filledCount() >= slots.length) finishSeason();
   render();
 }
@@ -210,6 +237,7 @@ function reset() {
   state.roster = Array(slots.length).fill(null);
   state.rolled = false;
   state.searchQuery = "";
+  state.selectedPlayerID = null;
   el.resultPanel.classList.add("hidden");
   render();
 }
@@ -285,15 +313,51 @@ function renderChoices() {
   }
   if (!state.searchQuery.trim()) {
     const count = getAvailablePlayers().length;
-    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">${count.toLocaleString()} available</div><div class="player-meta">Start typing to search this team and era.</div></div>`;
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">${count.toLocaleString()} seasons available</div><div class="player-meta">Start typing to search this team and era.</div></div>`;
     return;
   }
-  const choices = getChoices();
-  if (choices.length === 0) {
+  if (!state.selectedPlayerID) {
+    const players = getPlayerMatches();
+    if (players.length === 0) {
+      el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">No match</div><div class="player-meta">Try another name from this slot's eligible pool.</div></div>`;
+      return;
+    }
+    el.choices.innerHTML = players
+      .map(
+        (player) => `
+        <button class="player-button" type="button" data-player="${player.playerID}">
+          <span>
+            <strong>${player.name}</strong>
+            <span class="player-meta">${player.teamName} | ${player.positions.join(" / ")}</span>
+          </span>
+          <span class="stat-line">
+            <span>${player.seasons} season${player.seasons === 1 ? "" : "s"}</span>
+          </span>
+        </button>
+      `,
+      )
+      .join("");
+    [...el.choices.querySelectorAll("[data-player]")].forEach((button) => {
+      button.addEventListener("click", () => {
+        state.selectedPlayerID = button.dataset.player;
+        renderChoices();
+      });
+    });
+    return;
+  }
+
+  const seasonChoices = getSeasonChoices();
+  if (seasonChoices.length === 0) {
     el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">No match</div><div class="player-meta">Try another name from this slot's eligible pool.</div></div>`;
     return;
   }
-  el.choices.innerHTML = choices
+  const selectedName = seasonChoices[0].name;
+  el.choices.innerHTML = `
+    <div class="season-header">
+      <button class="back-button" type="button" id="backToPlayers">Back</button>
+      <span>${selectedName}</span>
+    </div>
+    ${seasonChoices
     .map(
       (p, index) => `
       <div class="player-button" data-choice="${index}">
@@ -312,9 +376,14 @@ function renderChoices() {
       </div>
     `,
     )
-    .join("");
+    .join("")}
+  `;
+  document.querySelector("#backToPlayers").addEventListener("click", () => {
+    state.selectedPlayerID = null;
+    renderChoices();
+  });
   [...el.choices.querySelectorAll(".assign-button")].forEach((button) => {
-    button.addEventListener("click", () => draft(choices[Number(button.dataset.choice)], button.dataset.slot));
+    button.addEventListener("click", () => draft(seasonChoices[Number(button.dataset.choice)], button.dataset.slot));
   });
 }
 
@@ -346,6 +415,7 @@ function render() {
 el.rollButton.addEventListener("click", () => rollSlot());
 el.playerSearch.addEventListener("input", (event) => {
   state.searchQuery = event.target.value;
+  state.selectedPlayerID = null;
   renderChoices();
 });
 el.teamSkipButton.addEventListener("click", () => {
