@@ -212,17 +212,17 @@ function totals() {
 function projectWins() {
   if (filledCount() === 0) return null;
   const t = totals();
-  const balancePenalty = Math.max(0, 78 - Math.min(t.bat, t.pitch, t.field, t.clutch)) * 0.55;
+  const balancePenalty = Math.max(0, 82 - Math.min(t.bat, t.pitch, t.clutch)) * 0.25;
   const base =
-    t.bat * 0.34 +
-    t.pitch * 0.32 +
-    t.field * 0.13 +
-    t.speed * 0.08 +
-    t.clutch * 0.13 -
+    t.bat * 0.38 +
+    t.pitch * 0.34 +
+    t.speed * 0.1 +
+    t.clutch * 0.18 -
     balancePenalty;
-  const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 2.2);
+  const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 1.9);
   const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
-  return Math.max(0, Math.min(162, Math.round(curve + roundBoost)));
+  const perfectionBonus = filledCount() >= slots.length ? Math.max(0, base - 98) * 1.6 : 0;
+  return Math.max(0, Math.min(162, Math.round(curve + roundBoost + perfectionBonus)));
 }
 
 function finishSeason() {
@@ -231,7 +231,7 @@ function finishSeason() {
   if (wins >= 162) {
     el.resultTitle.textContent = "162-0. Immortal.";
     el.resultCopy.textContent =
-      "The model found no soft spot: bats, arms, gloves, speed, and leverage all survived the curve.";
+      "The model found no soft spot: bats, arms, speed, and leverage all survived the curve.";
   } else if (wins >= 150) {
     el.resultTitle.textContent = `${wins}-win monster`;
     el.resultCopy.textContent =
