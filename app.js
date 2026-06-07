@@ -1,5 +1,6 @@
 const slots = [
-  { id: "P", label: "Pitcher" },
+  { id: "SP", label: "Starting Pitcher" },
+  { id: "RP", label: "Relief Pitcher" },
   { id: "C", label: "Catcher" },
   { id: "1B", label: "First Base" },
   { id: "2B", label: "Second Base" },
@@ -194,15 +195,18 @@ function draft(playerPick, slotId) {
 
 function totals() {
   const drafted = state.roster.filter(Boolean);
-  const pitcher = state.roster[0];
-  const hitters = state.roster.slice(1).filter(Boolean);
+  const starter = state.roster[0];
+  const reliever = state.roster[1];
+  const hitters = state.roster.slice(2).filter(Boolean);
   const average = (list, key, fallback = 62) => {
     if (list.length === 0) return fallback;
     return list.reduce((total, player) => total + player[key], 0) / list.length;
   };
+  const starterPitch = starter ? starter.pitch : 62;
+  const relieverPitch = reliever ? reliever.pitch : 62;
   return {
     bat: average(hitters, "bat"),
-    pitch: pitcher ? pitcher.pitch : 62,
+    pitch: starterPitch * 0.72 + relieverPitch * 0.28,
     speed: average(hitters, "speed"),
     field: average(drafted, "field"),
     clutch: average(drafted, "clutch"),
@@ -463,7 +467,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=14");
+  const response = await fetch("./data/players.json?v=16");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;

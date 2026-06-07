@@ -249,9 +249,15 @@ h2 {
   background: var(--field-label);
 }
 
-.field-roster .roster-slot[data-position="P"] {
+.field-roster .roster-slot[data-position="SP"] {
   left: 50%;
   top: 56%;
+  transform: translate(-50%, -50%);
+}
+
+.field-roster .roster-slot[data-position="RP"] {
+  left: 63%;
+  top: 57%;
   transform: translate(-50%, -50%);
 }
 
