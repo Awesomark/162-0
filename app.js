@@ -225,12 +225,15 @@ function totals() {
 function projectWins() {
   if (filledCount() === 0) return null;
   const t = totals();
-  const balancePenalty = Math.max(0, 82 - Math.min(t.bat, t.pitch, t.field)) * 0.28;
+  const balancePenalty =
+    Math.max(0, 84 - Math.min(t.bat, t.pitch)) * 0.25 +
+    Math.max(0, 70 - t.field) * 0.08 +
+    Math.max(0, 55 - t.speed) * 0.04;
   const base =
-    t.bat * 0.4 +
-    t.pitch * 0.36 +
-    t.field * 0.16 +
-    t.speed * 0.08 -
+    t.bat * 0.45 +
+    t.pitch * 0.39 +
+    t.field * 0.1 +
+    t.speed * 0.06 -
     balancePenalty;
   const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 1.9);
   const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
@@ -481,7 +484,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=27");
+  const response = await fetch("./data/players.json?v=28");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
