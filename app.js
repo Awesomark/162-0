@@ -60,9 +60,15 @@ function filledCount() {
   return state.roster.filter(Boolean).length;
 }
 
+function canPlayPosition(playerPick, slotId) {
+  if (!playerPick) return false;
+  if (playerPick.positions.includes(slotId)) return true;
+  return ["LF", "CF", "RF"].includes(slotId) && playerPick.positions.includes("OF");
+}
+
 function openSlotsFor(playerPick) {
   return slots.filter(
-    (slot, index) => !state.roster[index] && playerPick.positions.includes(slot.id),
+    (slot, index) => !state.roster[index] && canPlayPosition(playerPick, slot.id),
   );
 }
 
@@ -71,7 +77,7 @@ function hasOpenPosition(playerPick) {
 }
 
 function canPlaySlot(playerPick, slotIndex) {
-  return Boolean(playerPick && slots[slotIndex] && playerPick.positions.includes(slots[slotIndex].id));
+  return Boolean(playerPick && slots[slotIndex] && canPlayPosition(playerPick, slots[slotIndex].id));
 }
 
 function playerInitials(name) {
@@ -184,7 +190,7 @@ function rollSlot(keepTeam = false, keepEra = false) {
 
 function draft(playerPick, slotId) {
   const slotIndex = slots.findIndex((slot) => slot.id === slotId);
-  if (slotIndex === -1 || state.roster[slotIndex] || !playerPick.positions.includes(slotId)) return;
+  if (slotIndex === -1 || state.roster[slotIndex] || !canPlayPosition(playerPick, slotId)) return;
   state.roster[slotIndex] = { ...playerPick, slot: slots[slotIndex].label };
   state.currentTeam = null;
   state.currentEra = null;
@@ -474,7 +480,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=18");
+  const response = await fetch("./data/players.json?v=19");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
