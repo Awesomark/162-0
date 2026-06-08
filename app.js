@@ -474,7 +474,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=17");
+  const response = await fetch("./data/players.json?v=18");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
