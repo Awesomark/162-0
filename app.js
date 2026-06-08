@@ -31,7 +31,9 @@ let eras = [];
 const el = {
   roundLabel: document.querySelector("#roundLabel"),
   skipLabel: document.querySelector("#skipLabel"),
+  projectionStatus: document.querySelector("#projectionStatus"),
   projectionLabel: document.querySelector("#projectionLabel"),
+  fieldProjection: document.querySelector("#fieldProjection"),
   recordBig: document.querySelector("#recordBig"),
   roster: document.querySelector("#roster"),
   rosterDetails: document.querySelector("#rosterDetails"),
@@ -422,11 +424,16 @@ function renderChoices() {
 function render() {
   const wins = projectWins();
   const filled = filledCount();
+  const seasonComplete = filled >= slots.length;
   el.roundLabel.textContent = `${Math.min(filled + 1, slots.length)} / ${slots.length}`;
   el.skipLabel.textContent = `Team ${state.teamSkips} | Era ${state.eraSkips}`;
-  el.projectionLabel.textContent = wins === null ? "--" : wins === 162 ? "162-0" : `${wins} wins`;
-  el.recordBig.textContent = wins === null ? "--" : wins;
-  if (filled >= slots.length) {
+  el.projectionStatus.classList.toggle("hidden", !seasonComplete);
+  el.fieldProjection.classList.toggle("hidden", !seasonComplete);
+  if (seasonComplete) {
+    el.projectionLabel.textContent = wins === 162 ? "162-0" : `${wins} wins`;
+    el.recordBig.textContent = wins;
+  }
+  if (seasonComplete) {
     el.slotTitle.textContent = "Season complete";
   } else {
     el.slotTitle.textContent = state.rolled ? "Pick any player" : `Round ${filled + 1}: Any position`;
@@ -467,7 +474,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=16");
+  const response = await fetch("./data/players.json?v=17");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;

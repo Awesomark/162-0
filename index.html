@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>162-0</title>
-    <link rel="stylesheet" href="./styles.css?v=16">
+    <link rel="stylesheet" href="./styles.css?v=17">
   </head>
   <body>
     <main class="shell">
@@ -22,7 +22,7 @@
             <span>Skips</span>
             <strong id="skipLabel">Team 1 | Era 1</strong>
           </div>
-          <div>
+          <div id="projectionStatus" class="hidden">
             <span>Projection</span>
             <strong id="projectionLabel">--</strong>
           </div>
@@ -42,7 +42,7 @@
               <rect class="base third" x="108" y="200" width="22" height="22" transform="rotate(45 119 211)"></rect>
               <rect class="mound" x="244" y="196" width="32" height="18"></rect>
             </svg>
-            <div class="field-copy">
+            <div class="field-copy hidden" id="fieldProjection">
               <span id="recordBig">--</span>
               <small>projected wins</small>
             </div>
@@ -89,6 +89,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=16"></script>
+    <script src="./app.js?v=17"></script>
   </body>
 </html>

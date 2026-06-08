@@ -145,7 +145,10 @@ h2 {
 
 .field-art {
   position: relative;
-  min-height: clamp(420px, 58vw, 660px);
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 520 / 420;
+  margin: 0 auto;
   overflow: visible;
   border-radius: 8px;
   background: var(--panel-3);
@@ -354,7 +357,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 10px;
 }
 
 .detail-slot {
@@ -593,10 +596,6 @@ h2 {
   .status-strip,
   .game-grid {
     grid-template-columns: 1fr;
-  }
-
-  .field-art {
-    min-height: 500px;
   }
 
   .field-roster .roster-slot {
