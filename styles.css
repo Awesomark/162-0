@@ -312,6 +312,12 @@ h2 {
   transform: translate(-50%, -50%);
 }
 
+.field-roster .roster-slot[data-position="DH"] {
+  left: 82%;
+  top: 83%;
+  transform: translate(-50%, -50%);
+}
+
 .roster-slot.filled {
   border-color: rgba(93, 187, 125, .55);
   background: rgba(47, 127, 85, .18);

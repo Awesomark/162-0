@@ -9,6 +9,7 @@ const slots = [
   { id: "LF", label: "Left Field" },
   { id: "CF", label: "Center Field" },
   { id: "RF", label: "Right Field" },
+  { id: "DH", label: "Designated Hitter" },
 ];
 
 const state = {
@@ -62,6 +63,7 @@ function filledCount() {
 
 function canPlayPosition(playerPick, slotId) {
   if (!playerPick) return false;
+  if (slotId === "DH") return !playerPick.positions.includes("SP") && !playerPick.positions.includes("RP");
   if (playerPick.positions.includes(slotId)) return true;
   return ["LF", "CF", "RF"].includes(slotId) && playerPick.positions.includes("OF");
 }
@@ -202,10 +204,10 @@ function draft(playerPick, slotId) {
 }
 
 function totals() {
-  const drafted = state.roster.filter(Boolean);
   const starter = state.roster[0];
   const reliever = state.roster[1];
   const hitters = state.roster.slice(2).filter(Boolean);
+  const fielders = state.roster.filter((player, index) => player && slots[index].id !== "DH");
   const average = (list, key, fallback = 62) => {
     if (list.length === 0) return fallback;
     return list.reduce((total, player) => total + player[key], 0) / list.length;
@@ -216,8 +218,7 @@ function totals() {
     bat: average(hitters, "bat"),
     pitch: starterPitch * 0.72 + relieverPitch * 0.28,
     speed: average(hitters, "speed"),
-    field: average(drafted, "field"),
-    clutch: average(drafted, "clutch"),
+    field: average(fielders, "field"),
   };
 }
 
@@ -226,11 +227,10 @@ function projectWins() {
   const t = totals();
   const balancePenalty = Math.max(0, 82 - Math.min(t.bat, t.pitch, t.field)) * 0.28;
   const base =
-    t.bat * 0.34 +
-    t.pitch * 0.32 +
-    t.field * 0.14 +
-    t.speed * 0.08 +
-    t.clutch * 0.12 -
+    t.bat * 0.4 +
+    t.pitch * 0.36 +
+    t.field * 0.16 +
+    t.speed * 0.08 -
     balancePenalty;
   const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 1.9);
   const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
@@ -244,7 +244,7 @@ function finishSeason() {
   if (wins >= 162) {
     el.resultTitle.textContent = "162-0. Immortal.";
     el.resultCopy.textContent =
-      "The model found no soft spot: bats, arms, defense, speed, and late-season impact all survived the curve.";
+      "The model found no soft spot: bats, arms, defense, and speed all survived the curve.";
   } else if (wins >= 150) {
     el.resultTitle.textContent = `${wins}-win monster`;
     el.resultCopy.textContent =
@@ -481,7 +481,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=24");
+  const response = await fetch("./data/players.json?v=25");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
