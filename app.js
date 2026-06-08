@@ -207,7 +207,7 @@ function totals() {
   const starter = state.roster[0];
   const reliever = state.roster[1];
   const hitters = state.roster.slice(2).filter(Boolean);
-  const fielders = state.roster.filter((player, index) => player && slots[index].id !== "DH");
+  const fielders = state.roster.filter((player, index) => player && !["SP", "RP", "DH"].includes(slots[index].id));
   const average = (list, key, fallback = 62) => {
     if (list.length === 0) return fallback;
     return list.reduce((total, player) => total + player[key], 0) / list.length;
@@ -481,7 +481,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=26");
+  const response = await fetch("./data/players.json?v=27");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
