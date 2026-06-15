@@ -206,7 +206,19 @@ function draft(playerPick, slotId) {
 function totals() {
   const starter = state.roster[0];
   const reliever = state.roster[1];
-  const hitters = state.roster.slice(2).filter(Boolean);
+  const hitters = state.roster
+    .slice(2)
+    .map((player, index) => {
+      if (!player) return null;
+      const slotId = slots[index + 2].id;
+      const speedBonus = Math.max(0, player.speed - 60) * 0.2;
+      const fieldBonus = slotId === "DH" ? 0 : Math.max(0, player.field - 80) * 0.4;
+      return {
+        ...player,
+        impact: player.bat + speedBonus + fieldBonus,
+      };
+    })
+    .filter(Boolean);
   const fielders = state.roster.filter((player, index) => player && !["SP", "RP", "DH"].includes(slots[index].id));
   const average = (list, key, fallback = 62) => {
     if (list.length === 0) return fallback;
@@ -216,6 +228,7 @@ function totals() {
   const relieverPitch = reliever ? reliever.pitch : 62;
   return {
     bat: average(hitters, "bat"),
+    impact: average(hitters, "impact"),
     pitch: starterPitch * 0.72 + relieverPitch * 0.28,
     speed: average(hitters, "speed"),
     field: average(fielders, "field"),
@@ -225,16 +238,8 @@ function totals() {
 function projectWins() {
   if (filledCount() === 0) return null;
   const t = totals();
-  const balancePenalty =
-    Math.max(0, 84 - Math.min(t.bat, t.pitch)) * 0.25 +
-    Math.max(0, 65 - t.field) * 0.04 +
-    Math.max(0, 50 - t.speed) * 0.02;
-  const base =
-    t.bat * 0.52 +
-    t.pitch * 0.39 +
-    t.field * 0.06 +
-    t.speed * 0.03 -
-    balancePenalty;
+  const balancePenalty = Math.max(0, 84 - Math.min(t.impact, t.pitch)) * 0.25;
+  const base = t.impact * 0.61 + t.pitch * 0.39 - balancePenalty;
   const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 1.9);
   const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
   const perfectionBonus = filledCount() >= slots.length ? Math.max(0, base - 98) * 1.6 : 0;
@@ -484,7 +489,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=30");
+  const response = await fetch("./data/players.json?v=31");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
