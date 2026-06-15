@@ -468,12 +468,14 @@ function render() {
   el.playerSearch.placeholder = state.rolled ? "Search any eligible player" : "Type a player name";
   el.teamSkipButton.disabled = !state.loaded || state.teamSkips === 0 || !state.rolled || filled >= slots.length;
   el.eraSkipButton.disabled = !state.loaded || state.eraSkips === 0 || !state.rolled || filled >= slots.length;
-  el.rollButton.disabled = !state.loaded || filled >= slots.length;
+  el.rollButton.disabled = !state.loaded || state.rolled || filled >= slots.length;
   renderRoster();
   renderChoices();
 }
 
-el.rollButton.addEventListener("click", () => rollSlot());
+el.rollButton.addEventListener("click", () => {
+  if (!state.rolled) rollSlot();
+});
 el.playerSearch.addEventListener("input", (event) => {
   state.searchQuery = event.target.value;
   state.selectedPlayerID = null;
