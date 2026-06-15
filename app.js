@@ -227,13 +227,13 @@ function projectWins() {
   const t = totals();
   const balancePenalty =
     Math.max(0, 84 - Math.min(t.bat, t.pitch)) * 0.25 +
-    Math.max(0, 70 - t.field) * 0.08 +
-    Math.max(0, 55 - t.speed) * 0.04;
+    Math.max(0, 65 - t.field) * 0.04 +
+    Math.max(0, 50 - t.speed) * 0.02;
   const base =
-    t.bat * 0.45 +
+    t.bat * 0.52 +
     t.pitch * 0.39 +
-    t.field * 0.1 +
-    t.speed * 0.06 -
+    t.field * 0.06 +
+    t.speed * 0.03 -
     balancePenalty;
   const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 1.9);
   const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
