@@ -240,10 +240,16 @@ function projectWins() {
   const t = totals();
   const balancePenalty = Math.max(0, 84 - Math.min(t.impact, t.pitch)) * 0.25;
   const base = t.impact * 0.61 + t.pitch * 0.39 - balancePenalty;
+  const perfectSeason =
+    filledCount() >= slots.length &&
+    t.impact >= 95 &&
+    t.pitch >= 95 &&
+    base >= 96.5;
+  if (perfectSeason) return 162;
   const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 1.9);
   const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
   const perfectionBonus = filledCount() >= slots.length ? Math.max(0, base - 98) * 1.6 : 0;
-  return Math.max(0, Math.min(162, Math.round(curve + roundBoost + perfectionBonus)));
+  return Math.max(0, Math.min(161, Math.round(curve + roundBoost + perfectionBonus)));
 }
 
 function finishSeason() {
@@ -489,7 +495,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=31");
+  const response = await fetch("./data/players.json?v=32");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
