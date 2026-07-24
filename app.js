@@ -17,6 +17,8 @@ const state = {
   eraSkips: 1,
   currentTeam: null,
   currentEra: null,
+  lastTeamId: null,
+  lastEraId: null,
   roster: Array(slots.length).fill(null),
   rolled: false,
   searchQuery: "",
@@ -165,29 +167,46 @@ function getSeasonChoices() {
     .sort((a, b) => b.year - a.year || b.bat + b.pitch - (a.bat + a.pitch));
 }
 
-function rollSlot(keepTeam = false, keepEra = false) {
+function getRollOptions(keepTeam = false, keepEra = false, avoidRepeat = true) {
   const draftedPlayerIds = new Set(state.roster.filter(Boolean).map((p) => p.playerID));
-  for (let tries = 0; tries < 500; tries += 1) {
-    const nextTeam = keepTeam && state.currentTeam ? state.currentTeam : sample(teams);
-    const nextEra = keepEra && state.currentEra ? state.currentEra : sample(eras);
-    const hasPlayers = players.some(
-      (p) =>
-        p.team === nextTeam.id &&
-        p.era === nextEra.id &&
-        !draftedPlayerIds.has(p.playerID) &&
-        hasOpenPosition(p),
-    );
-    if (hasPlayers) {
-      state.currentTeam = nextTeam;
-      state.currentEra = nextEra;
-      break;
+  const repeatTeamId = state.currentTeam?.id ?? state.lastTeamId;
+  const repeatEraId = state.currentEra?.id ?? state.lastEraId;
+  const options = [];
+  for (const nextTeam of teams) {
+    if (keepTeam && state.currentTeam && nextTeam.id !== state.currentTeam.id) continue;
+    if (!keepTeam && avoidRepeat && repeatTeamId && nextTeam.id === repeatTeamId) continue;
+    for (const nextEra of eras) {
+      if (keepEra && state.currentEra && nextEra.id !== state.currentEra.id) continue;
+      if (!keepEra && avoidRepeat && state.currentEra && nextEra.id === repeatEraId) continue;
+
+      const hasPlayers = players.some(
+        (p) =>
+          p.team === nextTeam.id &&
+          p.era === nextEra.id &&
+          !draftedPlayerIds.has(p.playerID) &&
+          hasOpenPosition(p),
+      );
+      if (hasPlayers) options.push({ team: nextTeam, era: nextEra });
     }
   }
+  return options;
+}
+
+function rollSlot(keepTeam = false, keepEra = false) {
+  const options = getRollOptions(keepTeam, keepEra, true);
+  const fallbackOptions = options.length > 0 ? options : getRollOptions(keepTeam, keepEra, false);
+  const next = sample(fallbackOptions);
+  if (!next) return false;
+  state.currentTeam = next.team;
+  state.currentEra = next.era;
+  state.lastTeamId = next.team.id;
+  state.lastEraId = next.era.id;
   state.searchQuery = "";
   state.selectedPlayerID = null;
   state.rolled = true;
   render();
   el.playerSearch.focus();
+  return true;
 }
 
 function draft(playerPick, slotId) {
@@ -279,6 +298,8 @@ function reset() {
   state.eraSkips = 1;
   state.currentTeam = null;
   state.currentEra = null;
+  state.lastTeamId = null;
+  state.lastEraId = null;
   state.roster = Array(slots.length).fill(null);
   state.rolled = false;
   state.searchQuery = "";
@@ -482,22 +503,22 @@ el.playerSearch.addEventListener("input", (event) => {
   renderChoices();
 });
 el.teamSkipButton.addEventListener("click", () => {
-  if (state.teamSkips > 0) {
+  if (state.teamSkips > 0 && rollSlot(false, true)) {
     state.teamSkips -= 1;
-    rollSlot(false, true);
+    render();
   }
 });
 el.eraSkipButton.addEventListener("click", () => {
-  if (state.eraSkips > 0) {
+  if (state.eraSkips > 0 && rollSlot(true, false)) {
     state.eraSkips -= 1;
-    rollSlot(true, false);
+    render();
   }
 });
 el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=32");
+  const response = await fetch("./data/players.json?v=34");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
