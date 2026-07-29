@@ -215,7 +215,8 @@ h2 {
 .roster-slot,
 .player-button,
 .team-card,
-.slot-card {
+.slot-card,
+.era-setup {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-2);
@@ -459,6 +460,60 @@ h2 {
 
 .team-card strong {
   font-size: 1.35rem;
+}
+
+.era-setup {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.era-setup > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.era-setup span {
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.era-setup strong {
+  color: var(--ink);
+  font-size: .9rem;
+}
+
+.era-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.era-option {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 1px solid rgba(109, 164, 207, .35);
+  background: rgba(109, 164, 207, .18);
+  text-align: left;
+}
+
+.era-option.active {
+  border-color: rgba(93, 187, 125, .85);
+  background: rgba(47, 127, 85, .42);
+}
+
+.era-option small {
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 850;
+  text-transform: uppercase;
 }
 
 .search-box {

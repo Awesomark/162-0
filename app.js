@@ -12,9 +12,17 @@ const slots = [
   { id: "DH", label: "Designated Hitter" },
 ];
 
+const eraRanges = [
+  { id: "all", label: "All Eras", shortLabel: "All Time", minYear: null },
+  { id: "live", label: "Live-Ball Era", shortLabel: "1920-Today", minYear: 1920 },
+  { id: "expansion", label: "Expansion Era", shortLabel: "1960-Today", minYear: 1960 },
+  { id: "current", label: "Current Era", shortLabel: "1990s-Today", minYear: 1990 },
+];
+
 const state = {
   teamSkips: 1,
   eraSkips: 1,
+  eraRangeId: "all",
   currentTeam: null,
   currentEra: null,
   lastTeamId: null,
@@ -44,6 +52,7 @@ const el = {
   teamSkipButton: document.querySelector("#teamSkipButton"),
   eraSkipButton: document.querySelector("#eraSkipButton"),
   rollButton: document.querySelector("#rollButton"),
+  eraSetup: document.querySelector("#eraSetup"),
   teamMark: document.querySelector("#teamMark"),
   teamName: document.querySelector("#teamName"),
   eraName: document.querySelector("#eraName"),
@@ -57,6 +66,20 @@ const el = {
 
 function sample(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function selectedEraRange() {
+  return eraRanges.find((range) => range.id === state.eraRangeId) ?? eraRanges[0];
+}
+
+function eraStartYear(era) {
+  if (era.id === "pre1900") return 0;
+  return Number(era.id.slice(0, 4));
+}
+
+function isEraInSelectedRange(era) {
+  const range = selectedEraRange();
+  return range.minYear === null || eraStartYear(era) >= range.minYear;
 }
 
 function filledCount() {
@@ -171,13 +194,14 @@ function getRollOptions(keepTeam = false, keepEra = false, avoidRepeat = true) {
   const draftedPlayerIds = new Set(state.roster.filter(Boolean).map((p) => p.playerID));
   const repeatTeamId = state.currentTeam?.id ?? state.lastTeamId;
   const repeatEraId = state.currentEra?.id ?? state.lastEraId;
+  const rollEras = eras.filter(isEraInSelectedRange);
   const options = [];
   for (const nextTeam of teams) {
     if (keepTeam && state.currentTeam && nextTeam.id !== state.currentTeam.id) continue;
     if (!keepTeam && avoidRepeat && repeatTeamId && nextTeam.id === repeatTeamId) continue;
-    for (const nextEra of eras) {
+    for (const nextEra of rollEras) {
       if (keepEra && state.currentEra && nextEra.id !== state.currentEra.id) continue;
-      if (!keepEra && avoidRepeat && state.currentEra && nextEra.id === repeatEraId) continue;
+      if (!keepEra && avoidRepeat && repeatEraId && nextEra.id === repeatEraId) continue;
 
       const hasPlayers = players.some(
         (p) =>
@@ -296,6 +320,7 @@ function finishSeason() {
 function reset() {
   state.teamSkips = 1;
   state.eraSkips = 1;
+  state.eraRangeId = "all";
   state.currentTeam = null;
   state.currentEra = null;
   state.lastTeamId = null;
@@ -306,6 +331,41 @@ function reset() {
   state.selectedPlayerID = null;
   el.resultPanel.classList.add("hidden");
   render();
+}
+
+function renderEraSetup() {
+  const locked = state.rolled || filledCount() > 0;
+  el.eraSetup.innerHTML = `
+    <div>
+      <span>Era Pool</span>
+      <strong>${selectedEraRange().shortLabel}</strong>
+    </div>
+    <div class="era-options">
+      ${eraRanges
+        .map(
+          (range) => `
+        <button
+          class="era-option${range.id === state.eraRangeId ? " active" : ""}"
+          type="button"
+          data-era-range="${range.id}"
+          ${locked ? "disabled" : ""}
+        >
+          <span>${range.label}</span>
+          <small>${range.shortLabel}</small>
+        </button>
+      `,
+        )
+        .join("")}
+    </div>
+  `;
+  [...el.eraSetup.querySelectorAll("[data-era-range]")].forEach((button) => {
+    button.addEventListener("click", () => {
+      if (locked) return;
+      state.eraRangeId = button.dataset.eraRange;
+      state.lastEraId = null;
+      render();
+    });
+  });
 }
 
 function renderRoster() {
@@ -384,7 +444,7 @@ function renderChoices() {
     return;
   }
   if (!state.rolled) {
-    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">On deck</div><div class="player-meta">Roll, then type a player name.</div></div>`;
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">On deck</div><div class="player-meta">Roll from the ${selectedEraRange().label.toLowerCase()} pool, then type a player name.</div></div>`;
     return;
   }
   if (!state.searchQuery.trim()) {
@@ -483,13 +543,14 @@ function render() {
   const teamIdentity = getEraTeamIdentity();
   el.teamMark.textContent = teamIdentity ? teamIdentity.mark : "162";
   el.teamName.textContent = teamIdentity ? teamIdentity.name : "Waiting on the machine";
-  el.eraName.textContent = state.currentEra ? state.currentEra.label : "Any era";
+  el.eraName.textContent = state.currentEra ? state.currentEra.label : selectedEraRange().shortLabel;
   el.playerSearch.value = state.searchQuery;
   el.playerSearch.disabled = !state.loaded || !state.rolled || filled >= slots.length;
   el.playerSearch.placeholder = state.rolled ? "Search any eligible player" : "Type a player name";
   el.teamSkipButton.disabled = !state.loaded || state.teamSkips === 0 || !state.rolled || filled >= slots.length;
   el.eraSkipButton.disabled = !state.loaded || state.eraSkips === 0 || !state.rolled || filled >= slots.length;
   el.rollButton.disabled = !state.loaded || state.rolled || filled >= slots.length;
+  renderEraSetup();
   renderRoster();
   renderChoices();
 }
