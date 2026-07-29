@@ -16,7 +16,7 @@ const eraRanges = [
   { id: "all", label: "All Eras", shortLabel: "All Time", minYear: null },
   { id: "live", label: "Live-Ball Era", shortLabel: "1920-Today", minYear: 1920 },
   { id: "expansion", label: "Expansion Era", shortLabel: "1960-Today", minYear: 1960 },
-  { id: "current", label: "Current Era", shortLabel: "1990s-Today", minYear: 1990 },
+  { id: "current", label: "Current Era", shortLabel: "1990-Today", minYear: 1990 },
 ];
 
 const state = {
@@ -579,7 +579,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=37");
+  const response = await fetch("./data/players.json?v=38");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
