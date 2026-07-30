@@ -19,6 +19,8 @@ const eraRanges = [
   { id: "current", label: "Current Era", shortLabel: "1990-Today", minYear: 1990 },
 ];
 
+const minTeamEraSeasons = 5;
+
 const state = {
   teamSkips: 1,
   eraSkips: 1,
@@ -38,6 +40,7 @@ const state = {
 let teams = [];
 let players = [];
 let eras = [];
+let teamEraYearCounts = new Map();
 
 const el = {
   roundLabel: document.querySelector("#roundLabel"),
@@ -80,6 +83,25 @@ function eraStartYear(era) {
 function isEraInSelectedRange(era) {
   const range = selectedEraRange();
   return range.minYear === null || eraStartYear(era) >= range.minYear;
+}
+
+function teamEraKey(teamId, eraId) {
+  return `${teamId}|${eraId}`;
+}
+
+function buildTeamEraYearCounts() {
+  const yearsByTeamEra = new Map();
+  for (const player of players) {
+    const key = teamEraKey(player.team, player.era);
+    const years = yearsByTeamEra.get(key) ?? new Set();
+    years.add(player.year);
+    yearsByTeamEra.set(key, years);
+  }
+  teamEraYearCounts = new Map([...yearsByTeamEra].map(([key, years]) => [key, years.size]));
+}
+
+function hasEnoughTeamEraSeasons(teamId, eraId) {
+  return (teamEraYearCounts.get(teamEraKey(teamId, eraId)) ?? 0) >= minTeamEraSeasons;
 }
 
 function filledCount() {
@@ -202,6 +224,7 @@ function getRollOptions(keepTeam = false, keepEra = false, avoidRepeat = true) {
     for (const nextEra of rollEras) {
       if (keepEra && state.currentEra && nextEra.id !== state.currentEra.id) continue;
       if (!keepEra && avoidRepeat && repeatEraId && nextEra.id === repeatEraId) continue;
+      if (!hasEnoughTeamEraSeasons(nextTeam.id, nextEra.id)) continue;
 
       const hasPlayers = players.some(
         (p) =>
@@ -579,11 +602,12 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=38");
+  const response = await fetch("./data/players.json?v=39");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
   players = data.players;
+  buildTeamEraYearCounts();
   state.loaded = true;
   render();
 }
