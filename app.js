@@ -41,6 +41,7 @@ let teams = [];
 let players = [];
 let eras = [];
 let teamEraYearCounts = new Map();
+let rollForwardTeamEras = new Map();
 
 const el = {
   roundLabel: document.querySelector("#roundLabel"),
@@ -98,10 +99,25 @@ function buildTeamEraYearCounts() {
     yearsByTeamEra.set(key, years);
   }
   teamEraYearCounts = new Map([...yearsByTeamEra].map(([key, years]) => [key, years.size]));
+  rollForwardTeamEras = new Map();
+  for (const [key, yearCount] of teamEraYearCounts) {
+    if (yearCount >= minTeamEraSeasons) continue;
+    const [teamId, eraId] = key.split("|");
+    const eraIndex = eras.findIndex((era) => era.id === eraId);
+    const nextEra = eras[eraIndex + 1];
+    if (eraIndex === -1 || !nextEra) continue;
+    rollForwardTeamEras.set(key, nextEra.id);
+  }
 }
 
-function hasEnoughTeamEraSeasons(teamId, eraId) {
-  return (teamEraYearCounts.get(teamEraKey(teamId, eraId)) ?? 0) >= minTeamEraSeasons;
+function isAbsorbedTeamEra(teamId, eraId) {
+  return rollForwardTeamEras.has(teamEraKey(teamId, eraId));
+}
+
+function isPlayerInRolledPool(player, teamId, eraId) {
+  if (player.team !== teamId) return false;
+  if (player.era === eraId) return true;
+  return rollForwardTeamEras.get(teamEraKey(player.team, player.era)) === eraId;
 }
 
 function filledCount() {
@@ -155,8 +171,7 @@ function getAvailablePlayers() {
   const draftedPlayerIds = new Set(state.roster.filter(Boolean).map((p) => p.playerID));
   return players.filter(
     (p) =>
-      p.team === state.currentTeam.id &&
-      p.era === state.currentEra.id &&
+      isPlayerInRolledPool(p, state.currentTeam.id, state.currentEra.id) &&
       !draftedPlayerIds.has(p.playerID) &&
       hasOpenPosition(p),
   );
@@ -166,7 +181,7 @@ function getEraTeamIdentity() {
   if (!state.currentTeam || !state.currentEra) return null;
   const counts = new Map();
   for (const entry of players) {
-    if (entry.team !== state.currentTeam.id || entry.era !== state.currentEra.id) continue;
+    if (!isPlayerInRolledPool(entry, state.currentTeam.id, state.currentEra.id)) continue;
     const key = `${entry.teamName}|${entry.teamMark}`;
     const current = counts.get(key) ?? { name: entry.teamName, mark: entry.teamMark, count: 0 };
     current.count += 1;
@@ -224,12 +239,11 @@ function getRollOptions(keepTeam = false, keepEra = false, avoidRepeat = true) {
     for (const nextEra of rollEras) {
       if (keepEra && state.currentEra && nextEra.id !== state.currentEra.id) continue;
       if (!keepEra && avoidRepeat && repeatEraId && nextEra.id === repeatEraId) continue;
-      if (!hasEnoughTeamEraSeasons(nextTeam.id, nextEra.id)) continue;
+      if (isAbsorbedTeamEra(nextTeam.id, nextEra.id)) continue;
 
       const hasPlayers = players.some(
         (p) =>
-          p.team === nextTeam.id &&
-          p.era === nextEra.id &&
+          isPlayerInRolledPool(p, nextTeam.id, nextEra.id) &&
           !draftedPlayerIds.has(p.playerID) &&
           hasOpenPosition(p),
       );
@@ -602,7 +616,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=39");
+  const response = await fetch("./data/players.json?v=40");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
