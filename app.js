@@ -33,7 +33,7 @@ const state = {
   rolled: false,
   searchQuery: "",
   selectedPlayerID: null,
-  seasonSort: "score",
+  seasonSort: "wobaPlus",
   positionFilter: "all",
   loaded: false,
   dragFromIndex: null,
@@ -225,11 +225,7 @@ function getPlayerMatches() {
 
 const sortOptions = {
   year: { label: "Year", direction: "desc", value: (entry) => entry.year },
-  score: {
-    label: "Score",
-    direction: "desc",
-    value: (entry) => Math.max(entry.bat, entry.pitch) + entry.speed * 0.03 + entry.field * 0.03,
-  },
+  pitch: { label: "Pitch", direction: "desc", value: (entry) => entry.positions.some((position) => ["SP", "RP"].includes(position)) ? entry.pitch : null },
   ba: { label: "BA", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+BA/) },
   obp: { label: "OBP", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+OBP/) },
   slg: { label: "SLG", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+SLG/) },
@@ -256,10 +252,14 @@ function statNumber(stats, pattern) {
 function seasonSortOptions(seasons) {
   const hasPitching = seasons.some((entry) => entry.positions.some((position) => ["SP", "RP"].includes(position)));
   const hasHitting = seasons.some((entry) => entry.positions.some((position) => !["SP", "RP"].includes(position)));
-  const keys = ["year", "score"];
+  const keys = ["year"];
   if (hasHitting) keys.push("ba", "obp", "slg", "wobaPlus", "hr", "rbi", "runs", "sb", "rdef");
-  if (hasPitching) keys.push("era", "k", "whip", "ip", "kpct", "bbpct");
+  if (hasPitching) keys.push("pitch", "era", "k", "whip", "ip", "kpct", "bbpct");
   return keys.map((key) => ({ key, ...sortOptions[key] }));
+}
+
+function defaultSortForPosition(positionId) {
+  return ["SP", "RP"].includes(positionId) ? "pitch" : "wobaPlus";
 }
 
 function positionFilterOptions() {
@@ -342,7 +342,7 @@ function rollSlot(keepTeam = false, keepEra = false) {
   state.lastEraId = next.era.id;
   state.searchQuery = "";
   state.selectedPlayerID = null;
-  state.seasonSort = "score";
+  state.seasonSort = "wobaPlus";
   state.positionFilter = "all";
   state.rolled = true;
   render();
@@ -359,7 +359,7 @@ function draft(playerPick, slotId) {
   state.rolled = false;
   state.searchQuery = "";
   state.selectedPlayerID = null;
-  state.seasonSort = "score";
+  state.seasonSort = "wobaPlus";
   state.positionFilter = "all";
   if (filledCount() >= slots.length) finishSeason();
   render();
@@ -586,6 +586,7 @@ function bindSeasonControls() {
   });
   document.querySelector("#positionFilter")?.addEventListener("change", (event) => {
     state.positionFilter = event.target.value;
+    state.seasonSort = defaultSortForPosition(state.positionFilter);
     renderChoices();
   });
 }
@@ -618,7 +619,7 @@ function reset() {
   state.rolled = false;
   state.searchQuery = "";
   state.selectedPlayerID = null;
-  state.seasonSort = "score";
+  state.seasonSort = "wobaPlus";
   state.positionFilter = "all";
   el.resultPanel.classList.add("hidden");
   render();
@@ -746,7 +747,7 @@ function renderChoices() {
   let seasonChoices = getTeamSeasonChoices();
   const activeSortOptions = seasonSortOptions(seasonChoices);
   if (!activeSortOptions.some((option) => option.key === state.seasonSort)) {
-    state.seasonSort = "score";
+    state.seasonSort = defaultSortForPosition(state.positionFilter);
     seasonChoices = getTeamSeasonChoices();
   }
   if (seasonChoices.length === 0) {
@@ -847,7 +848,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=46");
+  const response = await fetch("./data/players.json?v=47");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
