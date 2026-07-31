@@ -33,7 +33,8 @@ const state = {
   rolled: false,
   searchQuery: "",
   selectedPlayerID: null,
-  seasonSort: "year",
+  seasonSort: "score",
+  positionFilter: "all",
   loaded: false,
   dragFromIndex: null,
 };
@@ -260,9 +261,16 @@ function seasonSortOptions(seasons) {
   return keys.map((key) => ({ key, ...sortOptions[key] }));
 }
 
-function getSeasonChoices() {
-  if (!state.selectedPlayerID) return [];
-  const choices = getAvailablePlayers().filter((entry) => entry.playerID === state.selectedPlayerID);
+function positionFilterOptions() {
+  return [
+    { id: "all", label: "All" },
+    ...slots
+      .filter((slot, index) => !state.roster[index])
+      .map((slot) => ({ id: slot.id, label: slot.id })),
+  ];
+}
+
+function sortSeasons(choices) {
   const option = sortOptions[state.seasonSort] ?? sortOptions.year;
   return choices.sort((a, b) => {
     const aValue = option.value(a);
@@ -273,6 +281,27 @@ function getSeasonChoices() {
     const statOrder = option.direction === "asc" ? aValue - bValue : bValue - aValue;
     return statOrder || b.year - a.year || b.bat + b.pitch - (a.bat + a.pitch);
   });
+}
+
+function getSeasonChoices() {
+  if (!state.selectedPlayerID) return [];
+  return sortSeasons(getAvailablePlayers().filter((entry) => entry.playerID === state.selectedPlayerID));
+}
+
+function getTeamSeasonChoices() {
+  const query = state.searchQuery.trim().toLowerCase();
+  const choices = getAvailablePlayers().filter(
+    (entry) =>
+      (!query || entry.name.toLowerCase().includes(query)) &&
+      (state.positionFilter === "all" || canPlayPosition(entry, state.positionFilter)),
+  );
+  return sortSeasons(choices);
+}
+
+function assignableSlotsFor(player) {
+  const playerSlots = openSlotsFor(player);
+  if (state.positionFilter === "all") return playerSlots;
+  return playerSlots.filter((slot) => slot.id === state.positionFilter);
 }
 
 function getRollOptions(keepTeam = false, keepEra = false, avoidRepeat = true) {
@@ -312,7 +341,8 @@ function rollSlot(keepTeam = false, keepEra = false) {
   state.lastEraId = next.era.id;
   state.searchQuery = "";
   state.selectedPlayerID = null;
-  state.seasonSort = "year";
+  state.seasonSort = "score";
+  state.positionFilter = "all";
   state.rolled = true;
   render();
   el.playerSearch.focus();
@@ -328,7 +358,8 @@ function draft(playerPick, slotId) {
   state.rolled = false;
   state.searchQuery = "";
   state.selectedPlayerID = null;
-  state.seasonSort = "year";
+  state.seasonSort = "score";
+  state.positionFilter = "all";
   if (filledCount() >= slots.length) finishSeason();
   render();
 }
@@ -523,6 +554,41 @@ function renderScorecard(wins) {
     .join("");
 }
 
+function seasonHeaderHtml(label, positionOptions, activeSortOptions) {
+  return `
+    <div class="season-header">
+      <span>${label}</span>
+      <label class="sort-control" for="positionFilter">
+        <span>Position</span>
+        <select id="positionFilter">
+          ${positionOptions
+            .map((option) => `<option value="${option.id}" ${option.id === state.positionFilter ? "selected" : ""}>${option.label}</option>`)
+            .join("")}
+        </select>
+      </label>
+      <label class="sort-control" for="seasonSort">
+        <span>Sort</span>
+        <select id="seasonSort">
+          ${activeSortOptions
+            .map((option) => `<option value="${option.key}" ${option.key === state.seasonSort ? "selected" : ""}>${option.label}</option>`)
+            .join("")}
+        </select>
+      </label>
+    </div>
+  `;
+}
+
+function bindSeasonControls() {
+  document.querySelector("#seasonSort")?.addEventListener("change", (event) => {
+    state.seasonSort = event.target.value;
+    renderChoices();
+  });
+  document.querySelector("#positionFilter")?.addEventListener("change", (event) => {
+    state.positionFilter = event.target.value;
+    renderChoices();
+  });
+}
+
 function finishSeason() {
   const wins = projectWins();
   el.resultPanel.classList.remove("hidden");
@@ -551,7 +617,8 @@ function reset() {
   state.rolled = false;
   state.searchQuery = "";
   state.selectedPlayerID = null;
-  state.seasonSort = "year";
+  state.seasonSort = "score";
+  state.positionFilter = "all";
   el.resultPanel.classList.add("hidden");
   render();
 }
@@ -667,69 +734,36 @@ function renderChoices() {
     return;
   }
   if (!state.rolled) {
-    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">On deck</div><div class="player-meta">Roll from the ${selectedEraRange().label.toLowerCase()} pool, then type a player name.</div></div>`;
-    return;
-  }
-  if (!state.searchQuery.trim()) {
-    const count = getAvailablePlayers().length;
-    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">${count.toLocaleString()} seasons available</div><div class="player-meta">Start typing to search this team and era.</div></div>`;
-    return;
-  }
-  if (!state.selectedPlayerID) {
-    const players = getPlayerMatches();
-    if (players.length === 0) {
-      el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">No match</div><div class="player-meta">Try another name from this slot's eligible pool.</div></div>`;
-      return;
-    }
-    el.choices.innerHTML = players
-      .map(
-        (player) => `
-        <button class="player-button" type="button" data-player="${player.playerID}">
-          <span>
-            <strong>${player.name}</strong>
-            <span class="player-meta">${player.teamName} | ${player.positions.join(" / ")}</span>
-          </span>
-          <span class="stat-line">
-            <span>${player.seasons} season${player.seasons === 1 ? "" : "s"}</span>
-          </span>
-        </button>
-      `,
-      )
-      .join("");
-    [...el.choices.querySelectorAll("[data-player]")].forEach((button) => {
-      button.addEventListener("click", () => {
-        state.selectedPlayerID = button.dataset.player;
-        state.seasonSort = "year";
-        renderChoices();
-      });
-    });
+    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">On deck</div><div class="player-meta">Roll from the ${selectedEraRange().label.toLowerCase()} pool, then browse the best seasons or search by name.</div></div>`;
     return;
   }
 
-  const seasonChoices = getSeasonChoices();
-  if (seasonChoices.length === 0) {
-    el.choices.innerHTML = `<div class="roster-slot"><div class="slot-name">No match</div><div class="player-meta">Try another name from this slot's eligible pool.</div></div>`;
-    return;
+  const activePositionOptions = positionFilterOptions();
+  if (!activePositionOptions.some((option) => option.id === state.positionFilter)) {
+    state.positionFilter = "all";
   }
-  const selectedName = seasonChoices[0].name;
+  let seasonChoices = getTeamSeasonChoices();
   const activeSortOptions = seasonSortOptions(seasonChoices);
   if (!activeSortOptions.some((option) => option.key === state.seasonSort)) {
-    state.seasonSort = "year";
+    state.seasonSort = "score";
+    seasonChoices = getTeamSeasonChoices();
   }
+  if (seasonChoices.length === 0) {
+    const fallbackSortOptions = seasonSortOptions(getAvailablePlayers());
+    el.choices.innerHTML = `
+      ${seasonHeaderHtml("No matching seasons", activePositionOptions, fallbackSortOptions)}
+      <div class="roster-slot"><div class="slot-name">No match</div><div class="player-meta">Try another name or position from this team's eligible pool.</div></div>
+    `;
+    bindSeasonControls();
+    return;
+  }
+  const visibleChoices = seasonChoices.slice(0, 60);
+  const listLabel = state.searchQuery.trim()
+    ? `${seasonChoices.length.toLocaleString()} matching season${seasonChoices.length === 1 ? "" : "s"}`
+    : `Best ${Math.min(visibleChoices.length, seasonChoices.length).toLocaleString()} of ${seasonChoices.length.toLocaleString()} seasons`;
   el.choices.innerHTML = `
-    <div class="season-header">
-      <button class="back-button" type="button" id="backToPlayers">Back</button>
-      <span>${selectedName}</span>
-      <label class="sort-control" for="seasonSort">
-        <span>Sort</span>
-        <select id="seasonSort">
-          ${activeSortOptions
-            .map((option) => `<option value="${option.key}" ${option.key === state.seasonSort ? "selected" : ""}>${option.label}</option>`)
-            .join("")}
-        </select>
-      </label>
-    </div>
-    ${seasonChoices
+    ${seasonHeaderHtml(listLabel, activePositionOptions, activeSortOptions)}
+    ${visibleChoices
     .map(
       (p, index) => `
       <div class="player-button" data-choice="${index}">
@@ -741,7 +775,7 @@ function renderChoices() {
           <span>${p.stats.replace(`${p.year}: `, "")}</span>
         </span>
         <span class="assign-line">
-          ${openSlotsFor(p)
+          ${assignableSlotsFor(p)
             .map((slot) => `<button class="assign-button" type="button" data-choice="${index}" data-slot="${slot.id}">${slot.id}</button>`)
             .join("")}
         </span>
@@ -750,17 +784,9 @@ function renderChoices() {
     )
     .join("")}
   `;
-  document.querySelector("#backToPlayers").addEventListener("click", () => {
-    state.selectedPlayerID = null;
-    state.seasonSort = "year";
-    renderChoices();
-  });
-  document.querySelector("#seasonSort").addEventListener("change", (event) => {
-    state.seasonSort = event.target.value;
-    renderChoices();
-  });
+  bindSeasonControls();
   [...el.choices.querySelectorAll(".assign-button")].forEach((button) => {
-    button.addEventListener("click", () => draft(seasonChoices[Number(button.dataset.choice)], button.dataset.slot));
+    button.addEventListener("click", () => draft(visibleChoices[Number(button.dataset.choice)], button.dataset.slot));
   });
 }
 
@@ -787,7 +813,7 @@ function render() {
   el.eraName.textContent = state.currentEra ? state.currentEra.label : selectedEraRange().shortLabel;
   el.playerSearch.value = state.searchQuery;
   el.playerSearch.disabled = !state.loaded || !state.rolled || filled >= slots.length;
-  el.playerSearch.placeholder = state.rolled ? "Search any eligible player" : "Type a player name";
+  el.playerSearch.placeholder = state.rolled ? "Filter by player name" : "Type a player name";
   el.teamSkipButton.disabled = !state.loaded || state.teamSkips === 0 || !state.rolled || filled >= slots.length;
   el.eraSkipButton.disabled = !state.loaded || state.eraSkips === 0 || !state.rolled || filled >= slots.length;
   el.rollButton.disabled = !state.loaded || state.rolled || filled >= slots.length;
@@ -802,7 +828,6 @@ el.rollButton.addEventListener("click", () => {
 el.playerSearch.addEventListener("input", (event) => {
   state.searchQuery = event.target.value;
   state.selectedPlayerID = null;
-  state.seasonSort = "year";
   renderChoices();
 });
 el.teamSkipButton.addEventListener("click", () => {
@@ -821,7 +846,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=44");
+  const response = await fetch("./data/players.json?v=45");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
