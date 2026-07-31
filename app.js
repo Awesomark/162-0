@@ -225,7 +225,6 @@ function getPlayerMatches() {
 
 const sortOptions = {
   year: { label: "Year", direction: "desc", value: (entry) => entry.year },
-  pitch: { label: "Pitch", direction: "desc", value: (entry) => entry.positions.some((position) => ["SP", "RP"].includes(position)) ? entry.pitch : null },
   ba: { label: "BA", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+BA/) },
   obp: { label: "OBP", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+OBP/) },
   slg: { label: "SLG", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+SLG/) },
@@ -254,12 +253,12 @@ function seasonSortOptions(seasons) {
   const hasHitting = seasons.some((entry) => entry.positions.some((position) => !["SP", "RP"].includes(position)));
   const keys = ["year"];
   if (hasHitting) keys.push("ba", "obp", "slg", "wobaPlus", "hr", "rbi", "runs", "sb", "rdef");
-  if (hasPitching) keys.push("pitch", "era", "k", "whip", "ip", "kpct", "bbpct");
+  if (hasPitching) keys.push("era", "k", "whip", "ip", "kpct", "bbpct");
   return keys.map((key) => ({ key, ...sortOptions[key] }));
 }
 
 function defaultSortForPosition(positionId) {
-  return ["SP", "RP"].includes(positionId) ? "pitch" : "wobaPlus";
+  return ["SP", "RP"].includes(positionId) ? "era" : "wobaPlus";
 }
 
 function positionFilterOptions() {
@@ -848,7 +847,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=47");
+  const response = await fetch("./data/players.json?v=48");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
