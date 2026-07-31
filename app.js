@@ -337,6 +337,27 @@ function formatScore(score) {
   return Math.round(score * 10) / 10;
 }
 
+function stolenBases(player) {
+  const match = player?.stats?.match(/,\s*(\d+)\s+SB,/);
+  return match ? Number(match[1]) : 0;
+}
+
+function hitterRoster() {
+  return state.roster.filter((player, index) => player && !["SP", "RP"].includes(slots[index].id));
+}
+
+function teamStolenBases() {
+  return hitterRoster().reduce((total, player) => total + stolenBases(player), 0);
+}
+
+function scorecardSpeedScore() {
+  const hitters = hitterRoster();
+  if (hitters.length === 0) return 62;
+  const averageSpeed = hitters.reduce((total, player) => total + player.speed, 0) / hitters.length;
+  const stealVolume = Math.min(105, 60 + teamStolenBases() * 0.22);
+  return averageSpeed * 0.3 + stealVolume * 0.7;
+}
+
 function scorePercent(score) {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
@@ -383,6 +404,7 @@ function rosterWeakSpots() {
 function teamEvaluation(wins) {
   const t = totals();
   const base = teamBaseScore(t);
+  const speedScore = scorecardSpeedScore();
   if (wins >= 162) {
     return "No real holes. The offense and pitching both cleared the perfect-season line, with enough defense and speed to keep the floor high.";
   }
@@ -400,7 +422,7 @@ function teamEvaluation(wins) {
   if (t.field < 82) {
     issues.push("defense was ordinary");
   }
-  if (t.speed < 72) {
+  if (speedScore < 72) {
     issues.push("speed did not add much extra pressure");
   }
 
@@ -417,12 +439,13 @@ function teamEvaluation(wins) {
 function scorecardRows(wins) {
   const t = totals();
   const base = teamBaseScore(t);
+  const sb = teamStolenBases();
   return [
     { label: "Offense", value: t.bat, note: "raw hitting" },
     { label: "Lineup", value: t.impact, note: "hitting plus bonuses" },
     { label: "Pitching", value: t.pitch, note: "SP/RP staff" },
     { label: "Defense", value: t.field, note: "non-pitchers" },
-    { label: "Speed", value: t.speed, note: "stolen-base value" },
+    { label: "Speed", value: scorecardSpeedScore(), note: `${sb} team SB` },
     { label: "Overall", value: base, note: wins >= 162 ? "perfect-season clear" : "perfect cutoff: 96.5" },
   ];
 }
@@ -729,7 +752,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=42");
+  const response = await fetch("./data/players.json?v=43");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
