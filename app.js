@@ -33,6 +33,7 @@ const state = {
   rolled: false,
   searchQuery: "",
   selectedPlayerID: null,
+  seasonSort: "year",
   loaded: false,
   dragFromIndex: null,
 };
@@ -221,11 +222,57 @@ function getPlayerMatches() {
     .slice(0, 10);
 }
 
+const sortOptions = {
+  year: { label: "Year", direction: "desc", value: (entry) => entry.year },
+  score: {
+    label: "Score",
+    direction: "desc",
+    value: (entry) => Math.max(entry.bat, entry.pitch) + entry.speed * 0.03 + entry.field * 0.03,
+  },
+  ba: { label: "BA", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+BA/) },
+  obp: { label: "OBP", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+OBP/) },
+  slg: { label: "SLG", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+SLG/) },
+  hr: { label: "HR", direction: "desc", value: (entry) => statNumber(entry.stats, /(\d+)\s+HR/) },
+  rbi: { label: "RBI", direction: "desc", value: (entry) => statNumber(entry.stats, /(\d+)\s+RBI/) },
+  runs: { label: "R", direction: "desc", value: (entry) => statNumber(entry.stats, /(\d+)\s+R,/) },
+  sb: { label: "SB", direction: "desc", value: (entry) => statNumber(entry.stats, /(\d+)\s+SB/) },
+  rdef: { label: "rDEF", direction: "desc", value: (entry) => statNumber(entry.stats, /([+-]?\d+(?:\.\d+)?)\s+rDEF/) },
+  era: { label: "ERA", direction: "asc", value: (entry) => statNumber(entry.stats, /([\d.]+)\s+ERA/) },
+  k: { label: "K", direction: "desc", value: (entry) => statNumber(entry.stats, /(\d+)\s+K,/) },
+  whip: { label: "WHIP", direction: "asc", value: (entry) => statNumber(entry.stats, /([\d.]+)\s+WHIP/) },
+  ip: { label: "IP", direction: "desc", value: (entry) => statNumber(entry.stats, /([\d.]+)\s+IP/) },
+  kpct: { label: "K%", direction: "desc", value: (entry) => statNumber(entry.stats, /([\d.]+)\s+K%/) },
+  bbpct: { label: "BB%", direction: "asc", value: (entry) => statNumber(entry.stats, /([\d.]+)\s+BB%/) },
+};
+
+function statNumber(stats, pattern) {
+  const match = stats.match(pattern);
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+function seasonSortOptions(seasons) {
+  const hasPitching = seasons.some((entry) => entry.positions.some((position) => ["SP", "RP"].includes(position)));
+  const hasHitting = seasons.some((entry) => entry.positions.some((position) => !["SP", "RP"].includes(position)));
+  const keys = ["year", "score"];
+  if (hasHitting) keys.push("ba", "obp", "slg", "hr", "rbi", "runs", "sb", "rdef");
+  if (hasPitching) keys.push("era", "k", "whip", "ip", "kpct", "bbpct");
+  return keys.map((key) => ({ key, ...sortOptions[key] }));
+}
+
 function getSeasonChoices() {
   if (!state.selectedPlayerID) return [];
-  return getAvailablePlayers()
-    .filter((entry) => entry.playerID === state.selectedPlayerID)
-    .sort((a, b) => b.year - a.year || b.bat + b.pitch - (a.bat + a.pitch));
+  const choices = getAvailablePlayers().filter((entry) => entry.playerID === state.selectedPlayerID);
+  const option = sortOptions[state.seasonSort] ?? sortOptions.year;
+  return choices.sort((a, b) => {
+    const aValue = option.value(a);
+    const bValue = option.value(b);
+    if (aValue === null && bValue !== null) return 1;
+    if (bValue === null && aValue !== null) return -1;
+    if (aValue === null && bValue === null) return b.year - a.year;
+    const statOrder = option.direction === "asc" ? aValue - bValue : bValue - aValue;
+    return statOrder || b.year - a.year || b.bat + b.pitch - (a.bat + a.pitch);
+  });
 }
 
 function getRollOptions(keepTeam = false, keepEra = false, avoidRepeat = true) {
@@ -265,6 +312,7 @@ function rollSlot(keepTeam = false, keepEra = false) {
   state.lastEraId = next.era.id;
   state.searchQuery = "";
   state.selectedPlayerID = null;
+  state.seasonSort = "year";
   state.rolled = true;
   render();
   el.playerSearch.focus();
@@ -280,6 +328,7 @@ function draft(playerPick, slotId) {
   state.rolled = false;
   state.searchQuery = "";
   state.selectedPlayerID = null;
+  state.seasonSort = "year";
   if (filledCount() >= slots.length) finishSeason();
   render();
 }
@@ -502,6 +551,7 @@ function reset() {
   state.rolled = false;
   state.searchQuery = "";
   state.selectedPlayerID = null;
+  state.seasonSort = "year";
   el.resultPanel.classList.add("hidden");
   render();
 }
@@ -649,6 +699,7 @@ function renderChoices() {
     [...el.choices.querySelectorAll("[data-player]")].forEach((button) => {
       button.addEventListener("click", () => {
         state.selectedPlayerID = button.dataset.player;
+        state.seasonSort = "year";
         renderChoices();
       });
     });
@@ -661,10 +712,22 @@ function renderChoices() {
     return;
   }
   const selectedName = seasonChoices[0].name;
+  const activeSortOptions = seasonSortOptions(seasonChoices);
+  if (!activeSortOptions.some((option) => option.key === state.seasonSort)) {
+    state.seasonSort = "year";
+  }
   el.choices.innerHTML = `
     <div class="season-header">
       <button class="back-button" type="button" id="backToPlayers">Back</button>
       <span>${selectedName}</span>
+      <label class="sort-control" for="seasonSort">
+        <span>Sort</span>
+        <select id="seasonSort">
+          ${activeSortOptions
+            .map((option) => `<option value="${option.key}" ${option.key === state.seasonSort ? "selected" : ""}>${option.label}</option>`)
+            .join("")}
+        </select>
+      </label>
     </div>
     ${seasonChoices
     .map(
@@ -689,6 +752,11 @@ function renderChoices() {
   `;
   document.querySelector("#backToPlayers").addEventListener("click", () => {
     state.selectedPlayerID = null;
+    state.seasonSort = "year";
+    renderChoices();
+  });
+  document.querySelector("#seasonSort").addEventListener("change", (event) => {
+    state.seasonSort = event.target.value;
     renderChoices();
   });
   [...el.choices.querySelectorAll(".assign-button")].forEach((button) => {
@@ -734,6 +802,7 @@ el.rollButton.addEventListener("click", () => {
 el.playerSearch.addEventListener("input", (event) => {
   state.searchQuery = event.target.value;
   state.selectedPlayerID = null;
+  state.seasonSort = "year";
   renderChoices();
 });
 el.teamSkipButton.addEventListener("click", () => {
@@ -752,7 +821,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=43");
+  const response = await fetch("./data/players.json?v=44");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;

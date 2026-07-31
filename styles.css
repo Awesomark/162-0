@@ -563,12 +563,46 @@ h2 {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
   background: var(--panel-2);
   color: var(--blue);
   font-weight: 900;
+}
+
+.season-header > span {
+  min-width: 0;
+  flex: 1;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.sort-control select {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 28px 0 10px;
+  color: var(--ink);
+  background: var(--panel-3);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.sort-control select:focus {
+  border-color: var(--green);
+  outline: 3px solid rgba(93, 187, 125, .2);
 }
 
 .back-button {
