@@ -332,26 +332,84 @@ function projectWins() {
   return Math.max(0, Math.min(161, Math.round(curve + roundBoost + perfectionBonus)));
 }
 
+function formatScore(score) {
+  return Math.round(score * 10) / 10;
+}
+
+function teamBaseScore(t) {
+  const balancePenalty = Math.max(0, 84 - Math.min(t.impact, t.pitch)) * 0.25;
+  return t.impact * 0.61 + t.pitch * 0.39 - balancePenalty;
+}
+
+function rosterWeakSpots() {
+  return state.roster
+    .map((player, index) => {
+      if (!player) return null;
+      const slot = slots[index];
+      if (slot.id === "SP" || slot.id === "RP") {
+        return { name: player.name, slot: slot.id, score: player.pitch, type: "pitching" };
+      }
+      const speedBonus = Math.max(0, player.speed - 60) * 0.2;
+      const fieldBonus = slot.id === "DH" ? 0 : Math.max(0, player.field - 80) * 0.4;
+      return {
+        name: player.name,
+        slot: slot.id,
+        score: player.bat + speedBonus + fieldBonus,
+        type: "lineup",
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 2);
+}
+
+function teamEvaluation(wins) {
+  const t = totals();
+  const base = teamBaseScore(t);
+  if (wins >= 162) {
+    return `This is a true 162-0 roster. The lineup impact (${formatScore(t.impact)}) and pitching (${formatScore(t.pitch)}) both clear the perfect-season gate, and the overall score (${formatScore(base)}) leaves the model without a real weakness to punish.`;
+  }
+
+  const issues = [];
+  if (t.impact < 95) {
+    issues.push(`Lineup impact landed at ${formatScore(t.impact)}, short of the 95 mark the model wants for perfection.`);
+  }
+  if (t.pitch < 95) {
+    issues.push(`Pitching came in at ${formatScore(t.pitch)}, so the staff was not quite dominant enough to erase random losses.`);
+  }
+  if (base < 96.5) {
+    issues.push(`The combined team score was ${formatScore(base)}, below the 96.5 perfect-season cutoff.`);
+  }
+  if (t.field < 82) {
+    issues.push(`Defense was more average than airtight at ${formatScore(t.field)}.`);
+  }
+  if (t.speed < 72) {
+    issues.push(`Speed did not add much extra pressure at ${formatScore(t.speed)}.`);
+  }
+
+  const weakSpots = rosterWeakSpots()
+    .filter((spot) => spot.score < 92)
+    .map((spot) => `${spot.slot} (${spot.name}, ${formatScore(spot.score)})`);
+  if (weakSpots.length > 0) {
+    issues.push(`The lowest internal spots were ${weakSpots.join(" and ")}.`);
+  }
+
+  return issues.slice(0, 3).join(" ");
+}
+
 function finishSeason() {
   const wins = projectWins();
   el.resultPanel.classList.remove("hidden");
   if (wins >= 162) {
     el.resultTitle.textContent = "162-0. Immortal.";
-    el.resultCopy.textContent =
-      "The model found no soft spot: bats, arms, defense, and speed all survived the curve.";
   } else if (wins >= 150) {
     el.resultTitle.textContent = `${wins}-win monster`;
-    el.resultCopy.textContent =
-      "This roster is a parade route with cleats. It still dropped a few chaos games because baseball is built to humble spreadsheets.";
   } else if (wins >= 120) {
     el.resultTitle.textContent = `${wins} wins`;
-    el.resultCopy.textContent =
-      "A legendary club, but the simulator found enough thin innings to keep perfection out of reach.";
   } else {
     el.resultTitle.textContent = `${wins} wins`;
-    el.resultCopy.textContent =
-      "Great names, uneven roster. The non-linear curve punishes missing pitching, defense, or table-setting.";
   }
+  el.resultCopy.textContent = teamEvaluation(wins);
 }
 
 function reset() {
@@ -616,7 +674,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=40");
+  const response = await fetch("./data/players.json?v=41");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;

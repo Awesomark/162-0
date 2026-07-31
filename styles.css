@@ -632,13 +632,16 @@ h2 {
 }
 
 .result-panel {
-  margin-top: 18px;
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 20;
+  width: min(420px, calc(100vw - 28px));
   padding: 18px;
   border-color: rgba(215, 93, 80, .45);
 }
 
 .result-panel p {
-  max-width: 760px;
   color: var(--muted);
   line-height: 1.55;
 }
@@ -648,6 +651,12 @@ h2 {
 }
 
 @media (max-width: 860px) {
+  .result-panel {
+    position: static;
+    width: auto;
+    margin-top: 18px;
+  }
+
   .scoreboard,
   .slot-card {
     align-items: stretch;
