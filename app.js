@@ -65,6 +65,7 @@ const el = {
   resultPanel: document.querySelector("#resultPanel"),
   resultTitle: document.querySelector("#resultTitle"),
   resultCopy: document.querySelector("#resultCopy"),
+  resultScorecard: document.querySelector("#resultScorecard"),
   newGameButton: document.querySelector("#newGameButton"),
 };
 
@@ -336,6 +337,22 @@ function formatScore(score) {
   return Math.round(score * 10) / 10;
 }
 
+function scorePercent(score) {
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function scoreGrade(score) {
+  if (score >= 97) return "A+";
+  if (score >= 94) return "A";
+  if (score >= 90) return "A-";
+  if (score >= 86) return "B+";
+  if (score >= 82) return "B";
+  if (score >= 78) return "B-";
+  if (score >= 74) return "C+";
+  if (score >= 70) return "C";
+  return "C-";
+}
+
 function teamBaseScore(t) {
   const balancePenalty = Math.max(0, 84 - Math.min(t.impact, t.pitch)) * 0.25;
   return t.impact * 0.61 + t.pitch * 0.39 - balancePenalty;
@@ -367,34 +384,71 @@ function teamEvaluation(wins) {
   const t = totals();
   const base = teamBaseScore(t);
   if (wins >= 162) {
-    return `This is a true 162-0 roster. The lineup impact (${formatScore(t.impact)}) and pitching (${formatScore(t.pitch)}) both clear the perfect-season gate, and the overall score (${formatScore(base)}) leaves the model without a real weakness to punish.`;
+    return "No real holes. The offense and pitching both cleared the perfect-season line, with enough defense and speed to keep the floor high.";
   }
 
   const issues = [];
   if (t.impact < 95) {
-    issues.push(`Lineup impact landed at ${formatScore(t.impact)}, short of the 95 mark the model wants for perfection.`);
+    issues.push("lineup was not quite 162-level");
   }
   if (t.pitch < 95) {
-    issues.push(`Pitching came in at ${formatScore(t.pitch)}, so the staff was not quite dominant enough to erase random losses.`);
+    issues.push("pitching left a few losses on the board");
   }
   if (base < 96.5) {
-    issues.push(`The combined team score was ${formatScore(base)}, below the 96.5 perfect-season cutoff.`);
+    issues.push("overall balance missed the perfection cutoff");
   }
   if (t.field < 82) {
-    issues.push(`Defense was more average than airtight at ${formatScore(t.field)}.`);
+    issues.push("defense was ordinary");
   }
   if (t.speed < 72) {
-    issues.push(`Speed did not add much extra pressure at ${formatScore(t.speed)}.`);
+    issues.push("speed did not add much extra pressure");
   }
 
   const weakSpots = rosterWeakSpots()
     .filter((spot) => spot.score < 92)
-    .map((spot) => `${spot.slot} (${spot.name}, ${formatScore(spot.score)})`);
+    .map((spot) => `${spot.slot}: ${spot.name}`);
   if (weakSpots.length > 0) {
-    issues.push(`The lowest internal spots were ${weakSpots.join(" and ")}.`);
+    issues.push(`lowest spots were ${weakSpots.join(" and ")}`);
   }
 
-  return issues.slice(0, 3).join(" ");
+  return `Needs work: ${issues.slice(0, 3).join("; ")}.`;
+}
+
+function scorecardRows(wins) {
+  const t = totals();
+  const base = teamBaseScore(t);
+  return [
+    { label: "Offense", value: t.bat, note: "raw hitting" },
+    { label: "Lineup", value: t.impact, note: "hitting plus bonuses" },
+    { label: "Pitching", value: t.pitch, note: "SP/RP staff" },
+    { label: "Defense", value: t.field, note: "non-pitchers" },
+    { label: "Speed", value: t.speed, note: "stolen-base value" },
+    { label: "Overall", value: base, note: wins >= 162 ? "perfect-season clear" : "perfect cutoff: 96.5" },
+  ];
+}
+
+function renderScorecard(wins) {
+  el.resultScorecard.innerHTML = scorecardRows(wins)
+    .map((row) => {
+      const value = formatScore(row.value);
+      const percent = scorePercent(row.value);
+      return `
+        <div class="scorecard-row">
+          <div class="scorecard-topline">
+            <span>${row.label}</span>
+            <strong>${scoreGrade(row.value)}</strong>
+          </div>
+          <div class="scorebar" aria-label="${row.label} score ${value}">
+            <span style="width: ${percent}%"></span>
+          </div>
+          <div class="scorecard-meta">
+            <span>${row.note}</span>
+            <span>${value}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 function finishSeason() {
@@ -409,6 +463,7 @@ function finishSeason() {
   } else {
     el.resultTitle.textContent = `${wins} wins`;
   }
+  renderScorecard(wins);
   el.resultCopy.textContent = teamEvaluation(wins);
 }
 
@@ -674,7 +729,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=41");
+  const response = await fetch("./data/players.json?v=42");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;

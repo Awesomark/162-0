@@ -632,16 +632,82 @@ h2 {
 }
 
 .result-panel {
-  position: fixed;
-  right: 22px;
-  bottom: 22px;
-  z-index: 20;
-  width: min(420px, calc(100vw - 28px));
+  margin-top: 14px;
   padding: 18px;
   border-color: rgba(215, 93, 80, .45);
+  background: var(--panel-3);
+  box-shadow: none;
+}
+
+.result-heading {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.result-heading h2 {
+  margin-bottom: 0;
+}
+
+.result-heading button {
+  min-height: 36px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.result-scorecard {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.scorecard-row {
+  display: grid;
+  gap: 5px;
+}
+
+.scorecard-topline,
+.scorecard-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scorecard-topline span,
+.scorecard-topline strong {
+  font-size: .82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scorecard-topline strong {
+  color: var(--gold);
+}
+
+.scorebar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(244, 239, 228, .1);
+}
+
+.scorebar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--red), var(--gold), var(--green-2));
+}
+
+.scorecard-meta {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .result-panel p {
+  margin: 14px 0 0;
   color: var(--muted);
   line-height: 1.55;
 }
@@ -651,12 +717,6 @@ h2 {
 }
 
 @media (max-width: 860px) {
-  .result-panel {
-    position: static;
-    width: auto;
-    margin-top: 18px;
-  }
-
   .scoreboard,
   .slot-card {
     align-items: stretch;

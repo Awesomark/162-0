@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>162-0</title>
-    <link rel="stylesheet" href="./styles.css?v=41">
+    <link rel="stylesheet" href="./styles.css?v=42">
   </head>
   <body>
     <main class="shell">
@@ -81,16 +81,21 @@
 
           <div class="choices" id="choices"></div>
 
+          <section class="result-panel hidden" id="resultPanel" aria-live="polite">
+            <div class="result-heading">
+              <div>
+                <p class="eyebrow">Final Scorecard</p>
+                <h2 id="resultTitle">Season Complete</h2>
+              </div>
+              <button id="newGameButton" type="button">New Season</button>
+            </div>
+            <div class="result-scorecard" id="resultScorecard"></div>
+            <p id="resultCopy"></p>
+          </section>
         </article>
-      </section>
-
-      <section class="result-panel hidden" id="resultPanel" aria-live="polite">
-        <h2 id="resultTitle">Season Complete</h2>
-        <p id="resultCopy"></p>
-        <button id="newGameButton" type="button">New Season</button>
       </section>
     </main>
 
-    <script src="./app.js?v=41"></script>
+    <script src="./app.js?v=42"></script>
   </body>
 </html>
