@@ -228,7 +228,6 @@ const sortOptions = {
   ba: { label: "BA", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+BA/) },
   obp: { label: "OBP", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+OBP/) },
   slg: { label: "SLG", direction: "desc", value: (entry) => statNumber(entry.stats, /([.\d]+)\s+SLG/) },
-  wobaPlus: { label: "wOBA+", direction: "desc", value: (entry) => entry.metrics?.wobaPlus ?? null },
   opsPlus: { label: "OPS+", direction: "desc", value: (entry) => entry.metrics?.opsPlus ?? null },
   ab: { label: "AB", direction: "desc", value: (entry) => entry.metrics?.atBats ?? statNumber(entry.stats, /(\d+)\s+AB/) },
   hr: { label: "HR", direction: "desc", value: (entry) => statNumber(entry.stats, /(\d+)\s+HR/) },
@@ -254,7 +253,7 @@ function seasonSortOptions(seasons) {
   const hasPitching = seasons.some((entry) => entry.positions.some((position) => ["SP", "RP"].includes(position)));
   const hasHitting = seasons.some((entry) => entry.positions.some((position) => !["SP", "RP"].includes(position)));
   const keys = ["year"];
-  if (hasHitting) keys.push("ba", "obp", "slg", "opsPlus", "ab", "wobaPlus", "hr", "rbi", "runs", "sb", "rdef");
+  if (hasHitting) keys.push("ba", "obp", "slg", "opsPlus", "ab", "hr", "rbi", "runs", "sb", "rdef");
   if (hasPitching) keys.push("era", "k", "whip", "ip", "kpct", "bbpct");
   return keys.map((key) => ({ key, ...sortOptions[key] }));
 }
@@ -849,7 +848,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=50");
+  const response = await fetch("./data/players.json?v=51");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
