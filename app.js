@@ -21,6 +21,12 @@ const eraRanges = [
 
 const minTeamEraSeasons = 5;
 
+const perfectCutoffs = {
+  impact: 101,
+  pitch: 98,
+  overall: 102,
+};
+
 const state = {
   teamSkips: 1,
   eraSkips: 1,
@@ -404,9 +410,9 @@ function projectWins() {
   const base = t.impact * 0.61 + t.pitch * 0.39 - balancePenalty;
   const perfectSeason =
     filledCount() >= slots.length &&
-    t.impact >= 95 &&
-    t.pitch >= 95 &&
-    base >= 96.5;
+    t.impact >= perfectCutoffs.impact &&
+    t.pitch >= perfectCutoffs.pitch &&
+    base >= perfectCutoffs.overall;
   if (perfectSeason) return 162;
   const curve = 50 + 112 * Math.pow(Math.max(0, base) / 100, 1.9);
   const roundBoost = filledCount() < slots.length ? filledCount() * 0.8 : 0;
@@ -491,13 +497,13 @@ function teamEvaluation(wins) {
   }
 
   const issues = [];
-  if (t.impact < 95) {
+  if (t.impact < perfectCutoffs.impact) {
     issues.push("lineup was not quite 162-level");
   }
-  if (t.pitch < 95) {
+  if (t.pitch < perfectCutoffs.pitch) {
     issues.push("pitching left a few losses on the board");
   }
-  if (base < 96.5) {
+  if (base < perfectCutoffs.overall) {
     issues.push("overall balance missed the perfection cutoff");
   }
   if (t.field < 82) {
@@ -527,7 +533,7 @@ function scorecardRows(wins) {
     { label: "Pitching", value: t.pitch, note: "SP/RP staff" },
     { label: "Defense", value: t.field, note: "non-pitchers" },
     { label: "Speed", value: scorecardSpeedScore(), note: `${sb} team SB` },
-    { label: "Overall", value: base, note: wins >= 162 ? "perfect-season clear" : "perfect cutoff: 96.5" },
+    { label: "Overall", value: base, note: wins >= 162 ? "perfect-season clear" : `perfect cutoff: ${perfectCutoffs.overall}` },
   ];
 }
 
@@ -848,7 +854,7 @@ el.newGameButton.addEventListener("click", reset);
 
 async function init() {
   render();
-  const response = await fetch("./data/players.json?v=51");
+  const response = await fetch("./data/players.json?v=52");
   const data = await response.json();
   teams = data.teams;
   eras = data.eras;
